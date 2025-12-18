@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030712;
+  --foreground: #e5e7eb;
+  --surface: rgba(15, 23, 42, 0.7);
+  --border: rgba(148, 163, 184, 0.18);
+  --muted: #94a3b8;
+  --primary: #34d399;
+  --primary-weak: rgba(52, 211, 153, 0.12);
+  --accent: #fbbf24;
+  --accent-weak: rgba(251, 191, 36, 0.12);
+  --danger: #f87171;
+  --danger-weak: rgba(248, 113, 113, 0.16);
 }
 
 @theme inline {
@@ -12,15 +21,19 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: radial-gradient(120% 70% at 20% 20%, #0b1224, #030712 60%),
+    radial-gradient(90% 60% at 80% 0%, rgba(52, 211, 153, 0.12), transparent 50%),
+    radial-gradient(60% 50% at 70% 80%, rgba(59, 130, 246, 0.08), transparent 60%),
+    #030712;
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
