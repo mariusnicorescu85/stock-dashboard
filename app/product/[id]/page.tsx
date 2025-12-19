@@ -118,7 +118,7 @@ const avgDailyDemand =
     : null;
 
 const pctChange =
-  latest && avgMonthlyDemand != null && avgMonthlyDemand > 0
+  latest && latest.monthlyDemand != null && avgMonthlyDemand != null && avgMonthlyDemand > 0
     ? ((latest.monthlyDemand - avgMonthlyDemand) / avgMonthlyDemand) * 100
     : null;
 
