@@ -316,12 +316,12 @@ const trendLabel =
       Latest month demand
     </p>
     <p className="mt-2 text-2xl font-semibold">
-      {latest ? latest.monthlyDemand : "—"}
+      {latest && latest.monthlyDemand != null ? latest.monthlyDemand : "—"}
     </p>
     <p className="mt-1 text-sm text-slate-400">
       Daily:{" "}
       <span className="font-medium text-slate-200">
-        {latest && Number.isFinite(latest.dailyDemand)
+        {latest && latest.dailyDemand != null && Number.isFinite(latest.dailyDemand)
           ? latest.dailyDemand.toFixed(2)
           : "—"}
       </span>
