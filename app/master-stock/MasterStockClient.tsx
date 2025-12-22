@@ -4,6 +4,10 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ProductRecord } from "@/lib/airtable";
 import { fmtGB } from "@/lib/StockMath";
+import AllocationSummary from "./components/AllocationSummary";
+import StockAlerts from "./components/StockAlerts";
+import QuickActions from "./components/QuickActions";
+import ShopMetrics from "./components/ShopMetrics";
 
 // Placeholder shops - replace with real data later
 const OPATRA_SHOPS = [
@@ -33,6 +37,7 @@ type ProductAllocation = {
 export default function MasterStockClient({ products }: { products: ProductRecord[] }) {
   const [allocations, setAllocations] = useState<Map<string, ProductAllocation>>(new Map());
   const [activeCategory, setActiveCategory] = useState<ShopCategory>("opatra");
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
   const activeShops = activeCategory === "opatra" ? OPATRA_SHOPS : PYT_SHOPS;
   
@@ -47,6 +52,40 @@ export default function MasterStockClient({ products }: { products: ProductRecor
 
   // Initialize allocations from products (for all products, but we'll filter display)
   useEffect(() => {
+    // Try to load from localStorage first
+    const saved = localStorage.getItem(`stock-allocations-${activeCategory}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const loaded = new Map<string, ProductAllocation>();
+        products.forEach((p) => {
+          const savedAlloc = parsed[p.id];
+          if (savedAlloc) {
+            // Update master stock from current data but keep allocations
+            loaded.set(p.id, {
+              ...savedAlloc,
+              masterStock: p.currentStock + p.incomingStockTotal,
+            });
+          } else {
+            // New product, initialize
+            loaded.set(p.id, {
+              productId: p.id,
+              masterStock: p.currentStock + p.incomingStockTotal,
+              shopAllocations: [...OPATRA_SHOPS, ...PYT_SHOPS].map((shop) => ({
+                shopId: shop.id,
+                allocatedStock: 0,
+              })),
+            });
+          }
+        });
+        setAllocations(loaded);
+        return;
+      } catch (e) {
+        console.error("Failed to load saved allocations", e);
+      }
+    }
+
+    // Initialize fresh
     const initial = new Map<string, ProductAllocation>();
     products.forEach((p) => {
       if (!initial.has(p.id)) {
@@ -61,7 +100,18 @@ export default function MasterStockClient({ products }: { products: ProductRecor
       }
     });
     setAllocations(initial);
-  }, [products]);
+  }, [products, activeCategory]);
+
+  // Save allocations to localStorage whenever they change
+  useEffect(() => {
+    if (allocations.size > 0) {
+      const toSave: Record<string, ProductAllocation> = {};
+      allocations.forEach((alloc, id) => {
+        toSave[id] = alloc;
+      });
+      localStorage.setItem(`stock-allocations-${activeCategory}`, JSON.stringify(toSave));
+    }
+  }, [allocations, activeCategory]);
 
   const updateAllocation = (
     productId: string,
@@ -90,6 +140,97 @@ export default function MasterStockClient({ products }: { products: ProductRecor
       newMap.set(productId, updated);
       return newMap;
     });
+  };
+
+  const handleAllocationsChange = (newAllocations: Map<string, ProductAllocation>) => {
+    setAllocations(newAllocations);
+  };
+
+  // Bulk allocate to selected products
+  const bulkAllocate = (shopId: string, value: number) => {
+    if (selectedProducts.size === 0) return;
+
+    const newAllocations = new Map(allocations);
+    selectedProducts.forEach((productId) => {
+      const allocation = newAllocations.get(productId);
+      if (!allocation) return;
+
+      const updated = { ...allocation };
+      const shopAlloc = updated.shopAllocations.find((a) => a.shopId === shopId);
+      if (shopAlloc) {
+        const currentTotal = updated.shopAllocations.reduce(
+          (sum, a) => (a.shopId === shopId ? sum : sum + a.allocatedStock),
+          0
+        );
+        const maxAllowed = Math.max(0, updated.masterStock - currentTotal);
+        shopAlloc.allocatedStock = Math.min(value, maxAllowed);
+      }
+      newAllocations.set(productId, updated);
+    });
+    setAllocations(newAllocations);
+  };
+
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedProducts(new Set(individuals.map((p) => p.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedProducts(new Set());
+  };
+
+  // Export to CSV
+  const exportToCSV = () => {
+    const headers = ["Product", "Master Stock", ...activeShops.map((s) => s.name), "Total Allocated", "Remaining", "Master Runway (days)"];
+    const rows = individuals.map((product) => {
+      const allocation = allocations.get(product.id);
+      if (!allocation) return [];
+
+      const totalAllocated = allocation.shopAllocations.reduce(
+        (sum, a) => (activeShops.some((s) => s.id === a.shopId) ? sum + a.allocatedStock : sum),
+        0
+      );
+      const remaining = allocation.masterStock - totalAllocated;
+
+      const totalDailyDemand = activeShops.reduce((sum, shop) => {
+        const shopAlloc = allocation.shopAllocations.find((a) => a.shopId === shop.id);
+        return sum + (shopAlloc && shopAlloc.allocatedStock > 0 ? shop.dailyDemand : 0);
+      }, 0);
+
+      const masterRunway = totalDailyDemand > 0 ? remaining / totalDailyDemand : null;
+
+      return [
+        product.name,
+        allocation.masterStock,
+        ...activeShops.map((shop) => {
+          const shopAlloc = allocation.shopAllocations.find((a) => a.shopId === shop.id);
+          return shopAlloc?.allocatedStock ?? 0;
+        }),
+        totalAllocated,
+        remaining,
+        masterRunway != null ? Math.round(masterRunway) : "",
+      ];
+    });
+
+    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `stock-allocation-${activeCategory}-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const getProductAllocation = (productId: string): ProductAllocation | null => {
@@ -155,6 +296,35 @@ export default function MasterStockClient({ products }: { products: ProductRecor
 
   return (
     <>
+      {/* Stock Alerts */}
+      <StockAlerts
+        products={filteredProducts}
+        allocations={allocations}
+        activeShops={activeShops}
+      />
+
+      {/* Quick Actions */}
+      <QuickActions
+        products={filteredProducts}
+        allocations={allocations}
+        activeShops={activeShops}
+        onAllocationsChange={handleAllocationsChange}
+      />
+
+      {/* Allocation Summary */}
+      <AllocationSummary
+        products={filteredProducts}
+        allocations={allocations}
+        activeShops={activeShops}
+      />
+
+      {/* Shop Metrics */}
+      <ShopMetrics
+        products={filteredProducts}
+        allocations={allocations}
+        activeShops={activeShops}
+      />
+
       {/* Category selector */}
       <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -235,10 +405,70 @@ export default function MasterStockClient({ products }: { products: ProductRecor
 
       {/* Products table */}
       <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-b border-slate-800/60">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-slate-200">Product Allocations</h2>
+            {selectedProducts.size > 0 && (
+              <span className="text-xs text-slate-400 bg-slate-800/60 px-2 py-1 rounded-full">
+                {selectedProducts.size} selected
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {selectedProducts.size > 0 && (
+              <>
+                <button
+                  onClick={clearSelection}
+                  className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-900/80 transition-colors"
+                >
+                  Clear Selection
+                </button>
+                {activeShops.map((shop) => (
+                  <button
+                    key={shop.id}
+                    onClick={() => {
+                      const avg = Math.floor(
+                        Array.from(selectedProducts).reduce((sum, id) => {
+                          const alloc = allocations.get(id);
+                          return sum + (alloc?.masterStock ?? 0) / activeShops.length;
+                        }, 0) / selectedProducts.size
+                      );
+                      bulkAllocate(shop.id, avg);
+                    }}
+                    className="rounded-xl border border-emerald-700/80 bg-emerald-950/60 px-3 py-2 text-xs font-medium text-emerald-200 hover:bg-emerald-900/80 transition-colors"
+                    title={`Allocate to ${shop.name}`}
+                  >
+                    {shop.name.slice(0, 8)}
+                  </button>
+                ))}
+              </>
+            )}
+            <button
+              onClick={selectAll}
+              className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-900/80 transition-colors"
+            >
+              Select All
+            </button>
+            <button
+              onClick={exportToCSV}
+              className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-900/80 hover:border-emerald-400/40 transition-colors"
+            >
+              📥 Export CSV
+            </button>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-950/90 text-xs uppercase text-slate-400 sticky top-0 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
               <tr>
+                <th className="px-4 py-3 text-left w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.size === individuals.length && individuals.length > 0}
+                    onChange={(e) => (e.target.checked ? selectAll() : clearSelection())}
+                    className="rounded border-slate-700 bg-slate-950"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left">Product</th>
                 <th className="px-4 py-3 text-right">Master Stock</th>
                 {activeShops.map((shop) => (
@@ -271,17 +501,29 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                   const isLowStock = remaining < allocation.masterStock * 0.2;
                   const isCritical = masterRunway.daysUntilRunOut != null && masterRunway.daysUntilRunOut <= 14;
 
+                  const isSelected = selectedProducts.has(product.id);
+
                   return (
                     <tr
                       key={product.id}
                       className={`border-t border-slate-800/70 transition-colors ${
-                        isCritical
+                        isSelected
+                          ? "bg-emerald-500/10 hover:bg-emerald-500/15"
+                          : isCritical
                           ? "bg-red-500/5 hover:bg-red-500/10"
                           : isLowStock
                           ? "bg-amber-500/5 hover:bg-amber-500/10"
                           : "hover:bg-slate-900/50"
                       }`}
                     >
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleProductSelection(product.id)}
+                          className="rounded border-slate-700 bg-slate-950"
+                        />
+                      </td>
                       <td className="px-4 py-4">
                         <Link
                           href={`/product/${product.id}`}
