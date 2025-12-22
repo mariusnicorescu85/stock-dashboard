@@ -97,7 +97,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
   };
 
   const getShop = (shopId: string) => {
-    return PLACEHOLDER_SHOPS.find((s) => s.id === shopId);
+    return [...OPATRA_SHOPS, ...PYT_SHOPS].find((s) => s.id === shopId);
   };
 
   const calculateMasterStockRunway = (product: ProductRecord, allocation: ProductAllocation) => {
