@@ -156,13 +156,18 @@ export default function MasterStockClient({ products }: { products: ProductRecor
   return (
     <>
       {/* Category selector */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-300">Shop Category</h2>
+      <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-200">Shop Category</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Select a category to view and allocate stock to shops
+            </p>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => setActiveCategory("opatra")}
-              className={`rounded-full border px-4 py-2 text-xs font-medium transition ${
+              className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition ${
                 activeCategory === "opatra"
                   ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
                   : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
@@ -172,7 +177,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
             </button>
             <button
               onClick={() => setActiveCategory("pyt")}
-              className={`rounded-full border px-4 py-2 text-xs font-medium transition ${
+              className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition ${
                 activeCategory === "pyt"
                   ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
                   : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
@@ -183,35 +188,56 @@ export default function MasterStockClient({ products }: { products: ProductRecor
           </div>
         </div>
 
-        {/* Active shops info */}
-        <div>
-          <h3 className="text-xs text-slate-400 mb-2 uppercase tracking-wide">
-            {activeCategory === "opatra" ? "Opatra" : "PYT"} Shops (Placeholders)
-          </h3>
-          <div className="grid gap-3 sm:grid-cols-3">
+        {/* Active shops info - Card layout */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
+              {activeCategory === "opatra" ? "Opatra" : "PYT"} Shops
+            </h3>
+            <span className="text-xs text-slate-500 bg-slate-800/60 px-2 py-1 rounded-full">
+              {activeShops.length} shop{activeShops.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {activeShops.map((shop) => (
               <div
                 key={shop.id}
-                className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-3"
+                className="rounded-xl border border-slate-700/80 bg-gradient-to-br from-slate-950/90 to-slate-900/70 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.3)] hover:border-emerald-400/40 transition-all hover:shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
               >
-                <p className="text-xs text-slate-400 uppercase tracking-wide">{shop.name}</p>
-                <p className="mt-1 text-lg font-semibold text-emerald-300">
-                  {shop.dailyDemand}/day
-                </p>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-100">{shop.name}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Placeholder shop</p>
+                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-400/20">
+                    <span className="text-lg">🏪</span>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-slate-800/60">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold text-emerald-300 tabular-nums">
+                      {shop.dailyDemand}
+                    </span>
+                    <span className="text-xs text-slate-400">units/day</span>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
+          <div className="mt-4 pt-4 border-t border-slate-800/60">
+            <p className="text-xs text-slate-500 flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400/60"></span>
+              Showing only {activeCategory === "opatra" ? "Opatra" : "PYT"} products. These are placeholder shops. Replace with real shop data when available.
+            </p>
+          </div>
         </div>
-        <p className="mt-3 text-xs text-slate-500">
-          Showing only {activeCategory === "opatra" ? "Opatra" : "PYT"} products. These are placeholder shops. Replace with real shop data when available.
-        </p>
       </section>
 
       {/* Products table */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden">
+      <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-950/80 text-xs uppercase text-slate-400 sticky top-0">
+            <thead className="bg-slate-950/90 text-xs uppercase text-slate-400 sticky top-0 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
               <tr>
                 <th className="px-4 py-3 text-left">Product</th>
                 <th className="px-4 py-3 text-right">Master Stock</th>
