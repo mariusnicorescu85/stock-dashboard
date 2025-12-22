@@ -268,77 +268,134 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                 const remaining = allocation.masterStock - totalAllocated;
                 const masterRunway = calculateMasterStockRunway(product, allocation);
 
-                return (
-                  <tr
-                    key={product.id}
-                    className="border-t border-slate-800/70 hover:bg-slate-900/50"
-                  >
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/product/${product.id}`}
-                        className="text-slate-100 hover:underline font-medium"
-                      >
-                        {product.name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-100">
-                      {allocation.masterStock}
-                    </td>
-                    {activeShops.map((shop) => {
-                      const shopAlloc = allocation.shopAllocations.find(
-                        (a) => a.shopId === shop.id
-                      );
-                      const allocated = shopAlloc?.allocatedStock ?? 0;
-                      const shopRunway = calculateShopRunway(shop.id, allocated);
+                  const isLowStock = remaining < allocation.masterStock * 0.2;
+                  const isCritical = masterRunway.daysUntilRunOut != null && masterRunway.daysUntilRunOut <= 14;
 
-                      return (
-                        <td key={shop.id} className="px-3 py-3">
-                          <div className="flex flex-col items-end gap-1">
-                            <input
-                              type="number"
-                              min="0"
-                              max={allocation.masterStock}
-                              value={allocated}
-                              onChange={(e) =>
-                                updateAllocation(
-                                  product.id,
-                                  shop.id,
-                                  Number(e.target.value) || 0
-                                )
-                              }
-                              className="w-20 rounded border border-slate-700 bg-slate-950/70 px-2 py-1 text-xs text-slate-100 text-right tabular-nums focus:border-emerald-400 focus:outline-none"
-                            />
-                            {shopRunway.daysUntilRunOut != null && (
-                              <span className="text-[10px] text-slate-400">
-                                {Math.round(shopRunway.daysUntilRunOut)}d
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-200">
-                      {totalAllocated}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-200">
-                      {remaining}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {masterRunway.daysUntilRunOut != null ? (
+                  return (
+                    <tr
+                      key={product.id}
+                      className={`border-t border-slate-800/70 transition-colors ${
+                        isCritical
+                          ? "bg-red-500/5 hover:bg-red-500/10"
+                          : isLowStock
+                          ? "bg-amber-500/5 hover:bg-amber-500/10"
+                          : "hover:bg-slate-900/50"
+                      }`}
+                    >
+                      <td className="px-4 py-4">
+                        <Link
+                          href={`/product/${product.id}`}
+                          className="group flex items-center gap-2 text-slate-100 hover:text-emerald-300 font-medium transition-colors"
+                        >
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 text-xs font-semibold text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-300 transition-colors">
+                            {(product.brand ?? "•").slice(0, 1)}
+                          </span>
+                          <span className="hover:underline">{product.name}</span>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-4">
                         <div className="flex flex-col items-end">
-                          <span className="text-slate-100 tabular-nums">
-                            {Math.round(masterRunway.daysUntilRunOut)}d
+                          <span className="text-right tabular-nums text-slate-100 font-semibold text-lg">
+                            {allocation.masterStock}
                           </span>
-                          <span className="text-[10px] text-slate-400">
-                            {fmtGB(masterRunway.runOutDate)}
-                          </span>
+                          <span className="text-[10px] text-slate-500">master stock</span>
                         </div>
-                      ) : (
-                        <span className="text-slate-500">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
+                      </td>
+                      {activeShops.map((shop) => {
+                        const shopAlloc = allocation.shopAllocations.find(
+                          (a) => a.shopId === shop.id
+                        );
+                        const allocated = shopAlloc?.allocatedStock ?? 0;
+                        const shopRunway = calculateShopRunway(shop.id, allocated);
+                        const shopIsLow = shopRunway.daysUntilRunOut != null && shopRunway.daysUntilRunOut <= 7;
+
+                        return (
+                          <td key={shop.id} className="px-3 py-4">
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={allocation.masterStock}
+                                  value={allocated}
+                                  onChange={(e) =>
+                                    updateAllocation(
+                                      product.id,
+                                      shop.id,
+                                      Number(e.target.value) || 0
+                                    )
+                                  }
+                                  className={`w-24 rounded-lg border px-3 py-2 text-sm text-slate-100 text-right tabular-nums font-medium transition-all focus:outline-none focus:ring-2 ${
+                                    allocated > 0
+                                      ? "border-emerald-400/40 bg-emerald-500/10 focus:border-emerald-400 focus:ring-emerald-500/30"
+                                      : "border-slate-700 bg-slate-950/70 focus:border-slate-600 focus:ring-slate-600/30"
+                                  }`}
+                                />
+                                {allocated > 0 && (
+                                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 border-2 border-slate-950"></span>
+                                )}
+                              </div>
+                              {shopRunway.daysUntilRunOut != null && (
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`text-xs font-medium tabular-nums px-2 py-0.5 rounded-full ${
+                                      shopIsLow
+                                        ? "bg-red-500/15 text-red-300 border border-red-500/30"
+                                        : "bg-slate-800/60 text-slate-300 border border-slate-700/60"
+                                    }`}
+                                  >
+                                    {Math.round(shopRunway.daysUntilRunOut)}d
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col items-end">
+                          <span className="text-right tabular-nums text-slate-200 font-semibold">
+                            {totalAllocated}
+                          </span>
+                          <span className="text-[10px] text-slate-500">allocated</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col items-end">
+                          <span
+                            className={`text-right tabular-nums font-semibold ${
+                              isLowStock ? "text-amber-300" : "text-slate-200"
+                            }`}
+                          >
+                            {remaining}
+                          </span>
+                          <span className="text-[10px] text-slate-500">remaining</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        {masterRunway.daysUntilRunOut != null ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <span
+                              className={`tabular-nums font-semibold px-2.5 py-1 rounded-lg ${
+                                isCritical
+                                  ? "bg-red-500/15 text-red-300 border border-red-500/30"
+                                  : masterRunway.daysUntilRunOut <= 30
+                                  ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                                  : "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                              }`}
+                            >
+                              {Math.round(masterRunway.daysUntilRunOut)}d
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {fmtGB(masterRunway.runOutDate)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
               })}
             </tbody>
           </table>
