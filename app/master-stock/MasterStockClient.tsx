@@ -6,13 +6,18 @@ import { ProductRecord } from "@/lib/airtable";
 import { fmtGB } from "@/lib/StockMath";
 
 // Placeholder shops - replace with real data later
-const PLACEHOLDER_SHOPS = [
-  { id: "shop1", name: "Shop A", dailyDemand: 20 },
-  { id: "shop2", name: "Shop B", dailyDemand: 15 },
-  { id: "shop3", name: "Shop C", dailyDemand: 10 },
-  { id: "shop4", name: "Shop D", dailyDemand: 12 },
-  { id: "shop5", name: "Shop E", dailyDemand: 8 },
+const OPATRA_SHOPS = [
+  { id: "opatra1", name: "Opatra Shop 1", dailyDemand: 20 },
+  { id: "opatra2", name: "Opatra Shop 2", dailyDemand: 15 },
+  { id: "opatra3", name: "Opatra Shop 3", dailyDemand: 10 },
 ];
+
+const PYT_SHOPS = [
+  { id: "pyt1", name: "PYT Shop 1", dailyDemand: 12 },
+  { id: "pyt2", name: "PYT Shop 2", dailyDemand: 8 },
+];
+
+type ShopCategory = "opatra" | "pyt";
 
 type ShopAllocation = {
   shopId: string;
@@ -27,8 +32,20 @@ type ProductAllocation = {
 
 export default function MasterStockClient({ products }: { products: ProductRecord[] }) {
   const [allocations, setAllocations] = useState<Map<string, ProductAllocation>>(new Map());
+  const [activeCategory, setActiveCategory] = useState<ShopCategory>("opatra");
 
-  // Initialize allocations from products
+  const activeShops = activeCategory === "opatra" ? OPATRA_SHOPS : PYT_SHOPS;
+  
+  // Filter products by brand based on active category
+  const filteredProducts = products.filter((p) => {
+    if (activeCategory === "opatra") {
+      return (p.brand ?? "").toLowerCase().includes("opatra");
+    } else {
+      return (p.brand ?? "").toLowerCase().includes("pyt");
+    }
+  });
+
+  // Initialize allocations from products (for all products, but we'll filter display)
   useEffect(() => {
     const initial = new Map<string, ProductAllocation>();
     products.forEach((p) => {
@@ -36,7 +53,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
         initial.set(p.id, {
           productId: p.id,
           masterStock: p.currentStock + p.incomingStockTotal,
-          shopAllocations: PLACEHOLDER_SHOPS.map((shop) => ({
+          shopAllocations: [...OPATRA_SHOPS, ...PYT_SHOPS].map((shop) => ({
             shopId: shop.id,
             allocatedStock: 0,
           })),
@@ -90,7 +107,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
     );
     const remainingMasterStock = allocation.masterStock - totalAllocated;
 
-    const totalDailyDemand = PLACEHOLDER_SHOPS.reduce(
+    const totalDailyDemand = [...OPATRA_SHOPS, ...PYT_SHOPS].reduce(
       (sum, shop) => {
         const alloc = allocation.shopAllocations.find((a) => a.shopId === shop.id);
         if (alloc && alloc.allocatedStock > 0) {
@@ -134,28 +151,59 @@ export default function MasterStockClient({ products }: { products: ProductRecor
     };
   };
 
-  const individuals = products.filter((p) => p.productType === "Individual");
+  const individuals = filteredProducts.filter((p) => p.productType === "Individual");
 
   return (
     <>
-      {/* Shops info */}
+      {/* Category selector */}
       <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-        <h2 className="text-sm font-semibold mb-3 text-slate-300">Shops (Placeholders)</h2>
-        <div className="grid gap-3 sm:grid-cols-5">
-          {PLACEHOLDER_SHOPS.map((shop) => (
-            <div
-              key={shop.id}
-              className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-3"
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-slate-300">Shop Category</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveCategory("opatra")}
+              className={`rounded-full border px-4 py-2 text-xs font-medium transition ${
+                activeCategory === "opatra"
+                  ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
+                  : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
+              }`}
             >
-              <p className="text-xs text-slate-400 uppercase tracking-wide">{shop.name}</p>
-              <p className="mt-1 text-lg font-semibold text-emerald-300">
-                {shop.dailyDemand}/day
-              </p>
-            </div>
-          ))}
+              Opatra Shops
+            </button>
+            <button
+              onClick={() => setActiveCategory("pyt")}
+              className={`rounded-full border px-4 py-2 text-xs font-medium transition ${
+                activeCategory === "pyt"
+                  ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
+                  : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
+              }`}
+            >
+              PYT Shops
+            </button>
+          </div>
+        </div>
+
+        {/* Active shops info */}
+        <div>
+          <h3 className="text-xs text-slate-400 mb-2 uppercase tracking-wide">
+            {activeCategory === "opatra" ? "Opatra" : "PYT"} Shops (Placeholders)
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {activeShops.map((shop) => (
+              <div
+                key={shop.id}
+                className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-3"
+              >
+                <p className="text-xs text-slate-400 uppercase tracking-wide">{shop.name}</p>
+                <p className="mt-1 text-lg font-semibold text-emerald-300">
+                  {shop.dailyDemand}/day
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
         <p className="mt-3 text-xs text-slate-500">
-          These are placeholder shops. Replace with real shop data when available.
+          Showing only {activeCategory === "opatra" ? "Opatra" : "PYT"} products. These are placeholder shops. Replace with real shop data when available.
         </p>
       </section>
 
@@ -167,7 +215,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
               <tr>
                 <th className="px-4 py-3 text-left">Product</th>
                 <th className="px-4 py-3 text-right">Master Stock</th>
-                {PLACEHOLDER_SHOPS.map((shop) => (
+                {activeShops.map((shop) => (
                   <th key={shop.id} className="px-3 py-3 text-right min-w-[120px]">
                     <div className="flex flex-col">
                       <span>{shop.name}</span>
@@ -210,7 +258,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                     <td className="px-4 py-3 text-right tabular-nums text-slate-100">
                       {allocation.masterStock}
                     </td>
-                    {PLACEHOLDER_SHOPS.map((shop) => {
+                    {activeShops.map((shop) => {
                       const shopAlloc = allocation.shopAllocations.find(
                         (a) => a.shopId === shop.id
                       );
