@@ -441,6 +441,12 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
       >
         Category demand
       </Link>
+      <Link
+        href="/master-stock"
+        className="h-10 inline-flex items-center rounded-xl border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200 hover:bg-slate-900/60"
+      >
+        Master Stock
+      </Link>
     </div>
   </div>
 
