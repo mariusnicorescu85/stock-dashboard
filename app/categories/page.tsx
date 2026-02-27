@@ -14,7 +14,7 @@ type SearchParams =
   | Promise<{ year?: string }>
   | { year?: string };
 
-const SUPPORTED_YEARS = [2024, 2025];
+const SUPPORTED_YEARS = [2024, 2025, 2026];
 
 const CATEGORY_CONFIG: {
   id: string;      // must match Airtable Category value (case-insensitive)
@@ -138,7 +138,7 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
                 Time range
               </p>
               <p className="text-sm text-slate-400">
-                Historical demand is available for 2024 and 2025 (up to November).
+                Historical demand is available for 2024, 2025, and 2026.
               </p>
             </div>
 
