@@ -196,19 +196,13 @@ const trendLabel =
           </div>
           <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
             <p className="text-xs uppercase tracking-wide text-slate-400">
-              Order by / Qty to order
+              Qty to order
             </p>
-            <p className="mt-2 text-sm">
-              Order by:{" "}
-              <span className="font-semibold">
-                {formatDate(product.orderByDate)}
-              </span>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-emerald-300">
+              {product.qtyToOrder}
             </p>
-            <p className="text-sm">
-              Qty:{" "}
-              <span className="font-semibold text-emerald-300 tabular-nums">
-                {product.qtyToOrder}
-              </span>
+            <p className="mt-1 text-xs text-slate-400">
+              Order by: {formatDate(product.orderByDate)}
             </p>
           </div>
         </section>
