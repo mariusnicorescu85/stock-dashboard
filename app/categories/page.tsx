@@ -326,7 +326,7 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
                               <td className="px-3 py-2 text-right tabular-nums text-slate-100">
                                 {displayOrderBy ?? "—"}
                               </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-emerald-300">
+                              <td className="px-3 py-2 text-right tabular-nums text-emerald-200 font-bold">
                                 {product.qtyToOrder}
                               </td>
                             </tr>

@@ -694,7 +694,7 @@ function Table({ sorted, opatra, pyt, others, totalsMap }: any) {
                             : "—"}
                         </td>
 
-                        <td className="px-4 py-3 text-right text-emerald-300 font-semibold min-w-[80px]">
+                        <td className="px-4 py-3 text-right text-emerald-200 font-bold tabular-nums min-w-[80px]">
   {p.qtyToOrder}
 </td>
 
