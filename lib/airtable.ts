@@ -439,6 +439,40 @@ export type SalesTotals = {
 };
 
 export async function fetchSalesTotalsAllTime(): Promise<Map<string, SalesTotals>> {
+  const maxRetries = 3;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await _fetchSalesTotalsAllTime();
+    } catch (e) {
+      const isIteratorError =
+        e instanceof Error &&
+        "iteratorNotAvailable" in e &&
+        (e as Error & { iteratorNotAvailable: boolean }).iteratorNotAvailable;
+
+      if (isIteratorError && attempt < maxRetries) {
+        console.warn(
+          `Airtable iterator timeout (attempt ${attempt}/${maxRetries}), retrying from start...`
+        );
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+
+      if (isIteratorError) {
+        console.error(
+          "Airtable iterator failed after retries. Dashboard will load with empty sales totals."
+        );
+        return new Map();
+      }
+
+      throw e;
+    }
+  }
+
+  return new Map();
+}
+
+async function _fetchSalesTotalsAllTime(): Promise<Map<string, SalesTotals>> {
   const tables = [AIRTABLE_MONTHLY_TABLE, AIRTABLE_PYT_MONTHLY_SALES_TABLE].filter(Boolean);
   const totals = new Map<string, SalesTotals>();
 
@@ -470,7 +504,26 @@ export async function fetchSalesTotalsAllTime(): Promise<Map<string, SalesTotals
       });
 
       if (!res.ok) {
-        console.error("Airtable error (totals all time):", await res.text());
+        const errText = await res.text();
+        let errJson: { error?: { type?: string } } = {};
+        try {
+          errJson = JSON.parse(errText) as { error?: { type?: string } };
+        } catch {
+          /* ignore */
+        }
+
+        if (
+          res.status === 422 &&
+          errJson.error?.type === "LIST_RECORDS_ITERATOR_NOT_AVAILABLE"
+        ) {
+          const customError = new Error(`Failed to fetch totals from ${tableName}`) as Error & {
+            iteratorNotAvailable: boolean;
+          };
+          customError.iteratorNotAvailable = true;
+          throw customError;
+        }
+
+        console.error("Airtable error (totals all time):", errText);
         throw new Error(`Failed to fetch totals from ${tableName}`);
       }
 

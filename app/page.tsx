@@ -234,7 +234,7 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
 
   return (
     <main className="min-h-screen text-slate-100">
-      <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
+      <div className="mx-auto max-w-[90rem] px-4 py-10 space-y-8">
         {/* Header */}
         <header className="space-y-2">
           <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/80">Ops Control</p>
@@ -695,8 +695,8 @@ function Table({ sorted, opatra, pyt, others, totalsMap }: any) {
                         </td>
 
                         <td className="px-4 py-3 text-right text-emerald-200 font-bold tabular-nums min-w-[80px]">
-  {p.qtyToOrder}
-</td>
+                          {p.qtyToOrder}
+                        </td>
 
                       </tr>
                     );
