@@ -46,3 +46,15 @@ export function fmtGB(d: Date | null) {
   if (!d) return "—";
   return d.toLocaleDateString("en-GB");
 }
+
+/** Calendar days in year (handles leap years). */
+export function daysInYear(year: number): number {
+  const y = Math.floor(year);
+  const feb29 = new Date(y, 1, 29);
+  return feb29.getMonth() === 1 ? 366 : 365;
+}
+
+/** Days in month (month is 1–12). */
+export function daysInMonth(year: number, month1to12: number): number {
+  return new Date(year, month1to12, 0).getDate();
+}

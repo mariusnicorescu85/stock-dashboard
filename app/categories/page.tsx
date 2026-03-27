@@ -2,11 +2,17 @@ import React from "react";
 import Link from "next/link";
 import {
   fetchProducts,
-  fetchDemandForYear,
+  fetchDemandBreakdownForYear,
   ProductRecord,
 } from "@/lib/airtable";
-import { computeStockDerived, fmtGB } from "@/lib/StockMath";
-import CategoryWhatIfPanel from "./CategoryWhatIfPanel";
+import { computeStockDerived, fmtGB, daysInYear } from "@/lib/StockMath";
+import { monthlyForProduct } from "@/lib/categoryDemandDisplay";
+import { monthlyHistoryYearsUpTo, EARLIEST_MONTHLY_HISTORY_YEAR } from "@/lib/categoryYears";
+import CategoriesTabs, {
+  type CategoryDemandBlock,
+  type CategoryDemandRow,
+  type YearSalesSlice,
+} from "./CategoriesTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +23,8 @@ type SearchParams =
 const SUPPORTED_YEARS = [2024, 2025, 2026];
 
 const CATEGORY_CONFIG: {
-  id: string;      // must match Airtable Category value (case-insensitive)
-  label: string;   // UI label
+  id: string;
+  label: string;
   description: string;
 }[] = [
   {
@@ -54,19 +60,24 @@ const CATEGORY_CONFIG: {
   {
     id: "other",
     label: "Other (PYT Hairstyle)",
-    description: "Other styling items for PYT Hairstyle that are not in the main categories.",
+    description:
+      "Other styling items for PYT Hairstyle that are not in the main categories.",
   },
 ];
 
 function resolveYear(sp: { year?: string }): number {
   const raw = sp.year ? Number(sp.year) : NaN;
   if (SUPPORTED_YEARS.includes(raw)) return raw;
-  // Default to latest supported year
   return SUPPORTED_YEARS[SUPPORTED_YEARS.length - 1];
 }
 
 function getDisplayYear(sp: SearchParams): Promise<number> {
-  if (typeof (sp as any)?.then === "function") {
+  if (
+    sp !== null &&
+    typeof sp === "object" &&
+    "then" in sp &&
+    typeof (sp as Promise<{ year?: string }>).then === "function"
+  ) {
     return (sp as Promise<{ year?: string }>).then(resolveYear);
   }
   return Promise.resolve(resolveYear(sp as { year?: string }));
@@ -74,32 +85,40 @@ function getDisplayYear(sp: SearchParams): Promise<number> {
 
 export default async function CategoriesPage(props: { searchParams?: SearchParams }) {
   const year = await getDisplayYear(props.searchParams ?? {});
+  const histYears = monthlyHistoryYearsUpTo(year);
 
-  const [products, yearlyDemand] = await Promise.all([
+  const [products, ...breakdownList] = await Promise.all([
     fetchProducts(),
-    fetchDemandForYear(year),
+    ...histYears.map((y) => fetchDemandBreakdownForYear(y)),
   ]);
 
-  // Helper: map name -> yearly units
-  const demandByName = yearlyDemand;
+  const breakdownByYear = new Map<number, Map<string, number[]>>();
+  histYears.forEach((y, i) => {
+    breakdownByYear.set(y, breakdownList[i] as Map<string, number[]>);
+  });
+
+  const daysInYearByYear = histYears.map((y) => ({
+    year: y,
+    days: daysInYear(y),
+  }));
+
+  const daysInYearPrimary = daysInYear(year);
 
   function productsInCategory(catId: string): ProductRecord[] {
     const catLower = catId.toLowerCase();
 
-    // Special rule for "other": only show PYT Hairstyle items in the "other" category.
     if (catLower === "other") {
       return products.filter((p) => {
-        const cat = (p.category ?? "").toLowerCase();
+        const c = (p.category ?? "").toLowerCase();
         const brand = (p.brand ?? "").toLowerCase();
-        return cat === "other" && brand.includes("pyt");
+        return c === "other" && brand.includes("pyt");
       });
     }
 
-    // Allow both "cerami" and "ceramic" spellings to be treated as the same category
     if (catLower === "cerami" || catLower === "ceramic") {
       return products.filter((p) => {
-        const cat = (p.category ?? "").toLowerCase();
-        return cat === "cerami" || cat === "ceramic";
+        const c = (p.category ?? "").toLowerCase();
+        return c === "cerami" || c === "ceramic";
       });
     }
 
@@ -108,12 +127,111 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     );
   }
 
-  function totalForCategory(catId: string): number {
-    return productsInCategory(catId).reduce(
-      (sum, p) => sum + (demandByName.get(p.name) ?? 0),
+  function rowForProduct(product: ProductRecord): CategoryDemandRow {
+    const byYear: YearSalesSlice[] = histYears.map((y) => {
+      const bd = breakdownByYear.get(y)!;
+      const months = monthlyForProduct(bd, product.name);
+      const totalUnits = months.reduce((sum, u) => sum + u, 0);
+      return { year: y, totalUnits, months };
+    });
+
+    const primarySlice = byYear.find((s) => s.year === year)!;
+    const unitsYear = primarySlice.totalUnits;
+
+    let displayRunOut: string | null = product.runOutDate;
+    let displayOrderBy: string | null = product.orderByDate;
+
+    const yearlyDaily =
+      unitsYear > 0 ? unitsYear / daysInYearPrimary : 0;
+
+    if ((!displayRunOut || !displayOrderBy) && yearlyDaily > 0) {
+      const derived = computeStockDerived({
+        currentStock: product.currentStock,
+        incomingStock: product.incomingStockTotal,
+        dailyDemand: yearlyDaily,
+        leadTimeDays: product.leadTimeDays ?? 0,
+      });
+
+      displayRunOut = fmtGB(derived.runOutDate);
+      displayOrderBy = fmtGB(derived.orderByDate);
+    } else {
+      displayRunOut = product.runOutDate
+        ? fmtGB(new Date(product.runOutDate))
+        : null;
+      displayOrderBy = product.orderByDate
+        ? fmtGB(new Date(product.orderByDate))
+        : null;
+    }
+
+    return {
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      byYear,
+      sheetDaily: product.dailyDemand ?? 0,
+      currentStock: product.currentStock,
+      incomingStockTotal: product.incomingStockTotal,
+      runOut: displayRunOut,
+      orderBy: displayOrderBy,
+      qtyToOrder: product.qtyToOrder,
+    };
+  }
+
+  const blocks: CategoryDemandBlock[] = [];
+
+  for (const cat of CATEGORY_CONFIG) {
+    const items = productsInCategory(cat.id);
+    if (items.length === 0) continue;
+
+    const rows = items.map(rowForProduct);
+
+    const totalsByYear = histYears.map((y) => {
+      const bd = breakdownByYear.get(y)!;
+      const total = items.reduce((sum, p) => {
+        const m = monthlyForProduct(bd, p.name);
+        return sum + m.reduce((a, b) => a + b, 0);
+      }, 0);
+      return { year: y, total };
+    });
+
+    const totalCurrentStock = items.reduce((sum, p) => sum + p.currentStock, 0);
+    const totalIncomingStock = items.reduce(
+      (sum, p) => sum + p.incomingStockTotal,
       0
     );
+    const totalDailyDemand = items.reduce(
+      (sum, p) => sum + (p.dailyDemand ?? 0),
+      0
+    );
+    const avgLeadTime =
+      items.length > 0
+        ? Math.round(
+            items.reduce(
+              (sum, p) =>
+                sum + (p.leadTimeDays != null ? p.leadTimeDays : 0),
+              0
+            ) / items.length
+          )
+        : 0;
+
+    blocks.push({
+      id: cat.id,
+      label: cat.label,
+      description: cat.description,
+      primaryYear: year,
+      totalsByYear,
+      totalCurrentStock,
+      totalIncomingStock,
+      totalDailyDemand,
+      avgLeadTime,
+      items: rows,
+    });
   }
+
+  const yearSpanLabel =
+    histYears.length > 1
+      ? `${histYears[0]}–${year}`
+      : String(year);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
@@ -122,7 +240,14 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
           <div>
             <h1 className="text-2xl font-semibold">Category demand overview</h1>
             <p className="text-sm text-slate-400">
-              See which products sit in each category and how many units they sold in a year.
+              Primary year (below) drives run-out math and the highlighted column.
+              <strong className="text-slate-300">Monthly (Jan–Dec)</strong> tab
+              and Overview include all loaded years{" "}
+              <strong className="text-slate-300">{yearSpanLabel}</strong> (from{" "}
+              {EARLIEST_MONTHLY_HISTORY_YEAR} through the selected year). To load
+              older data, lower{" "}
+              <code className="text-slate-300">EARLIEST_MONTHLY_HISTORY_YEAR</code>{" "}
+              in <code className="text-slate-300">lib/categoryYears.ts</code>.
             </p>
           </div>
           <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
@@ -130,15 +255,22 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
           </Link>
         </div>
 
-        {/* Year toggle */}
         <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/80">
-                Time range
+                Primary year
               </p>
               <p className="text-sm text-slate-400">
-                Historical demand is available for 2024, 2025, and 2026.
+                Monthly history loaded: {histYears.join(", ")}.
+              </p>
+              <p className="mt-2 text-sm text-slate-300">
+                <span className="text-emerald-300/90">Monthly detail:</span> scroll
+                to the two buttons under this box and choose{" "}
+                <strong className="font-medium text-slate-100">
+                  Monthly (Jan–Dec)
+                </strong>{" "}
+                — that tab shows Jan–Dec columns for each year.
               </p>
             </div>
 
@@ -166,194 +298,13 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
           </div>
         </section>
 
-        {/* Categories overview */}
-        <section className="space-y-4">
-          {CATEGORY_CONFIG.map((cat) => {
-            const items = productsInCategory(cat.id);
-
-            if (items.length === 0) return null;
-
-            const totalUnits = items.reduce(
-              (sum, p) => sum + (demandByName.get(p.name) ?? 0),
-              0
-            );
-
-            const totalCurrentStock = items.reduce(
-              (sum, p) => sum + p.currentStock,
-              0
-            );
-            const totalIncomingStock = items.reduce(
-              (sum, p) => sum + p.incomingStockTotal,
-              0
-            );
-            const totalDailyDemand = items.reduce(
-              (sum, p) => sum + (p.dailyDemand ?? 0),
-              0
-            );
-            const avgLeadTime =
-              items.length > 0
-                ? Math.round(
-                    items.reduce(
-                      (sum, p) =>
-                        sum + (p.leadTimeDays != null ? p.leadTimeDays : 0),
-                      0
-                    ) / items.length
-                  )
-                : 0;
-
-            return (
-              <div
-                key={cat.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.4)] space-y-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-                      Category
-                    </p>
-                    <h2 className="text-lg font-semibold">{cat.label}</h2>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {cat.description}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                      Total demand {year}
-                    </p>
-                    <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-300">
-                      {totalUnits}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Across {items.length} item
-                      {items.length === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Category-level what-if */}
-                <CategoryWhatIfPanel
-                  label={cat.label}
-                  initialCurrentStock={totalCurrentStock}
-                  initialIncomingStock={totalIncomingStock}
-                  initialDailyDemand={totalDailyDemand}
-                  initialLeadTimeDays={avgLeadTime}
-                />
-
-                <div className="overflow-hidden rounded-xl border border-slate-800/80 bg-slate-950/70">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-slate-950/80 text-xs uppercase text-slate-400">
-                      <tr>
-                        <th className="px-3 py-2 text-left">Product</th>
-                        <th className="px-3 py-2 text-left">Brand</th>
-                        <th className="px-3 py-2 text-right">Units {year}</th>
-                        <th className="px-3 py-2 text-right">Current stock</th>
-                        <th className="px-3 py-2 text-right">
-                          Incoming stock
-                        </th>
-                        <th className="px-3 py-2 text-right">
-                          Run-out date
-                        </th>
-                        <th className="px-3 py-2 text-right">Order-by date</th>
-                        <th className="px-3 py-2 text-right">Qty to order</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items
-                        .map((p) => ({
-                          product: p,
-                          units: demandByName.get(p.name) ?? 0,
-                        }))
-                        .sort((a, b) => b.units - a.units)
-                        .map(({ product, units }) => {
-                          // Use product's own dates if present; otherwise derive
-                          // daily demand from yearly units (Option B) and compute.
-                          let displayRunOut: string | null =
-                            product.runOutDate;
-                          let displayOrderBy: string | null =
-                            product.orderByDate;
-
-                          const yearlyDaily =
-                            units > 0 ? units / 365 : 0;
-
-                          if ((!displayRunOut || !displayOrderBy) && yearlyDaily > 0) {
-                            const derived = computeStockDerived({
-                              currentStock: product.currentStock,
-                              incomingStock: product.incomingStockTotal,
-                              dailyDemand: yearlyDaily,
-                              leadTimeDays: product.leadTimeDays ?? 0,
-                            });
-
-                            displayRunOut = fmtGB(derived.runOutDate);
-                            displayOrderBy = fmtGB(derived.orderByDate);
-                          } else {
-                            // Format existing ISO-like strings for consistency
-                            displayRunOut = product.runOutDate
-                              ? fmtGB(new Date(product.runOutDate))
-                              : null;
-                            displayOrderBy = product.orderByDate
-                              ? fmtGB(new Date(product.orderByDate))
-                              : null;
-                          }
-
-                          return (
-                            <tr
-                              key={product.id}
-                              className="border-t border-slate-900/70 odd:bg-slate-900/40 even:bg-slate-900/20"
-                            >
-                              <td className="px-3 py-2">
-                                <Link
-                                  href={`/product/${product.id}`}
-                                  className="text-slate-100 hover:underline"
-                                >
-                                  {product.name}
-                                </Link>
-                              </td>
-                              <td className="px-3 py-2 text-slate-400">
-                                {product.brand ?? "—"}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-slate-100">
-                                {units}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-slate-100">
-                                {product.currentStock}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-slate-100">
-                                {product.incomingStockTotal}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-slate-100">
-                                {displayRunOut ?? "—"}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-slate-100">
-                                {displayOrderBy ?? "—"}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-emerald-200 font-bold">
-                                {product.qtyToOrder}
-                              </td>
-                            </tr>
-                          );
-                        })}
-
-                      {items.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="px-3 py-4 text-center text-slate-400"
-                          >
-                            No products found for this category.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })}
-        </section>
+        <CategoriesTabs
+          primaryYear={year}
+          historyYearsAsc={histYears}
+          daysInYearByYear={daysInYearByYear}
+          blocks={blocks}
+        />
       </div>
     </main>
   );
 }
-
-
-

@@ -34,8 +34,14 @@ const AIRTABLE_PYT_MONTHLY_SALES_TABLE =
   process.env.AIRTABLE_PYT_MONTHLY_SALES_TABLE || "PYT Monthly Sales";
 const AIRTABLE_SUPPLIERS_TABLE = process.env.AIRTABLE_SUPPLIERS_TABLE || "Suppliers";
 
-if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
-  throw new Error("Missing Airtable env vars");
+if (!AIRTABLE_API_KEY?.trim() || !AIRTABLE_BASE_ID?.trim()) {
+  const missing = [
+    !AIRTABLE_API_KEY?.trim() && "AIRTABLE_API_KEY",
+    !AIRTABLE_BASE_ID?.trim() && "AIRTABLE_BASE_ID",
+  ].filter(Boolean);
+  throw new Error(
+    `Missing Airtable env vars: ${missing.join(", ")}. Create .env.local in the project root (next to package.json) with those keys, then restart the dev server.`
+  );
 }
 
 type AirtableRecord = {
@@ -273,18 +279,41 @@ export async function fetchDemandForYearMonth(year: number, month: number) {
   return merged;
 }
 
-// Fetch total demand per product for an entire year (sum of all 12 months)
-export async function fetchDemandForYear(year: number): Promise<Map<string, number>> {
-  const yearly = new Map<string, number>();
+/** Per-product units sold in each month index 0 = January … 11 = December for the given year. */
+export async function fetchDemandBreakdownForYear(
+  year: number
+): Promise<Map<string, number[]>> {
+  const monthMaps = await Promise.all(
+    Array.from({ length: 12 }, (_, i) => fetchDemandForYearMonth(year, i + 1))
+  );
 
-  for (let month = 1; month <= 12; month++) {
-    const monthly = await fetchDemandForYearMonth(year, month);
+  const byProduct = new Map<string, number[]>();
 
-    for (const [name, units] of monthly.entries()) {
+  for (let m = 0; m < 12; m++) {
+    const map = monthMaps[m];
+    for (const [name, units] of map.entries()) {
       const key = name.trim();
       if (!key) continue;
-      yearly.set(key, (yearly.get(key) ?? 0) + units);
+      let arr = byProduct.get(key);
+      if (!arr) {
+        arr = new Array(12).fill(0);
+        byProduct.set(key, arr);
+      }
+      arr[m] = units;
     }
+  }
+
+  return byProduct;
+}
+
+// Fetch total demand per product for an entire year (sum of all 12 months)
+export async function fetchDemandForYear(year: number): Promise<Map<string, number>> {
+  const breakdown = await fetchDemandBreakdownForYear(year);
+  const yearly = new Map<string, number>();
+
+  for (const [name, months] of breakdown.entries()) {
+    const total = months.reduce((sum, u) => sum + u, 0);
+    yearly.set(name, total);
   }
 
   return yearly;
