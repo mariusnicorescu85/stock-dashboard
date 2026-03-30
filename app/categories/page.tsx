@@ -7,18 +7,20 @@ import {
 } from "@/lib/airtable";
 import { computeStockDerived, fmtGB, daysInYear } from "@/lib/StockMath";
 import { monthlyForProduct } from "@/lib/categoryDemandDisplay";
-import { monthlyHistoryYearsUpTo, EARLIEST_MONTHLY_HISTORY_YEAR } from "@/lib/categoryYears";
+import { monthlyHistoryYearsUpTo } from "@/lib/categoryYears";
 import CategoriesTabs, {
   type CategoryDemandBlock,
   type CategoryDemandRow,
   type YearSalesSlice,
 } from "./CategoriesTabs";
+import { parseShopFilter, type ShopFilter } from "@/lib/shopFilter";
+import CategoriesShopSelect from "./CategoriesShopSelect";
 
 export const dynamic = "force-dynamic";
 
 type SearchParams =
-  | Promise<{ year?: string }>
-  | { year?: string };
+  | Promise<{ year?: string; shop?: string }>
+  | { year?: string; shop?: string };
 
 const SUPPORTED_YEARS = [2024, 2025, 2026];
 
@@ -65,6 +67,58 @@ const CATEGORY_CONFIG: {
   },
 ];
 
+/**
+ * Opatra blocks on the Products table: each label must match **Category** in Airtable
+ * (case-insensitive). PYT categories use different Category values on the PYT Products table.
+ */
+const OPATRA_CATEGORY_BLOCKS: {
+  id: string;
+  label: string;
+  description: string;
+  hideStockRunoutColumns?: boolean;
+}[] = [
+  {
+    id: "opatra-basic-skin-care",
+    label: "Basic Skin Care",
+    description: "Peeling gel, scrub, butter.",
+  },
+  {
+    id: "opatra-skin-essential-line",
+    label: "Skin Essential Line",
+    description: "Reverse 5, caviar mask, caviar defense cream.",
+  },
+  {
+    id: "opatra-skin-fab-line",
+    label: "Skin Fab Line",
+    description:
+      "Collagen day cream, collagen serum, collagen night cream, lift eye serum, reverse eye cream.",
+  },
+  {
+    id: "opatra-devices",
+    label: "Devices",
+    description:
+      "Dermieye Plus, Lumiquartz, Dermineck, Dermisonic 2, Synergy Marble.",
+  },
+  {
+    id: "opatra-synergy-line",
+    label: "Synergy Line",
+    description: "Synergy Eye, Synergy Face, Synergy Neck.",
+  },
+  {
+    id: "opatra-other",
+    label: "Other",
+    description:
+      "Other Opatra SKUs with Category = Other in Airtable.",
+  },
+  {
+    id: "opatra-combo",
+    label: "Combo",
+    description:
+      "Opatra bundle / combo products — set Category to Combo in Airtable on those rows.",
+    hideStockRunoutColumns: true,
+  },
+];
+
 function resolveYear(sp: { year?: string }): number {
   const raw = sp.year ? Number(sp.year) : NaN;
   if (SUPPORTED_YEARS.includes(raw)) return raw;
@@ -83,19 +137,33 @@ function getDisplayYear(sp: SearchParams): Promise<number> {
   return Promise.resolve(resolveYear(sp as { year?: string }));
 }
 
+function getDisplayShop(sp: SearchParams): Promise<ShopFilter> {
+  if (
+    sp !== null &&
+    typeof sp === "object" &&
+    "then" in sp &&
+    typeof (sp as Promise<{ shop?: string }>).then === "function"
+  ) {
+    return (sp as Promise<{ shop?: string }>).then((p) =>
+      parseShopFilter(p.shop)
+    );
+  }
+  return Promise.resolve(parseShopFilter((sp as { shop?: string })?.shop));
+}
+
 export default async function CategoriesPage(props: { searchParams?: SearchParams }) {
-  const year = await getDisplayYear(props.searchParams ?? {});
+  const [year, shop] = await Promise.all([
+    getDisplayYear(props.searchParams ?? {}),
+    getDisplayShop(props.searchParams ?? {}),
+  ]);
   const histYears = monthlyHistoryYearsUpTo(year);
 
-  const [products, ...breakdownList] = await Promise.all([
-    fetchProducts(),
-    ...histYears.map((y) => fetchDemandBreakdownForYear(y)),
-  ]);
+  const products = await fetchProducts();
 
   const breakdownByYear = new Map<number, Map<string, number[]>>();
-  histYears.forEach((y, i) => {
-    breakdownByYear.set(y, breakdownList[i] as Map<string, number[]>);
-  });
+  for (const y of histYears) {
+    breakdownByYear.set(y, await fetchDemandBreakdownForYear(y));
+  }
 
   const daysInYearByYear = histYears.map((y) => ({
     year: y,
@@ -125,6 +193,25 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     return products.filter(
       (p) => (p.category ?? "").toLowerCase() === catLower
     );
+  }
+
+  function isOpatraBrand(p: ProductRecord): boolean {
+    return (p.brand ?? "").toLowerCase().includes("opatra");
+  }
+
+  /** Category from Airtable for Opatra (Products table). */
+  function opatraDemandGroupLabel(p: ProductRecord): string | null {
+    if (!isOpatraBrand(p)) return null;
+    const c = (p.category ?? "").trim();
+    return c || null;
+  }
+
+  function opatraProductsForBlockLabel(blockLabel: string): ProductRecord[] {
+    const want = blockLabel.trim().toLowerCase();
+    return products.filter((p) => {
+      const g = opatraDemandGroupLabel(p);
+      return g != null && g.trim().toLowerCase() === want;
+    });
   }
 
   function rowForProduct(product: ProductRecord): CategoryDemandRow {
@@ -177,11 +264,14 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     };
   }
 
-  const blocks: CategoryDemandBlock[] = [];
-
-  for (const cat of CATEGORY_CONFIG) {
-    const items = productsInCategory(cat.id);
-    if (items.length === 0) continue;
+  function demandBlockForItems(
+    id: string,
+    label: string,
+    description: string,
+    items: ProductRecord[],
+    opts?: { hideStockRunoutColumns?: boolean }
+  ): CategoryDemandBlock | null {
+    if (items.length === 0) return null;
 
     const rows = items.map(rowForProduct);
 
@@ -214,10 +304,10 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
           )
         : 0;
 
-    blocks.push({
-      id: cat.id,
-      label: cat.label,
-      description: cat.description,
+    return {
+      id,
+      label,
+      description,
       primaryYear: year,
       totalsByYear,
       totalCurrentStock,
@@ -225,31 +315,47 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
       totalDailyDemand,
       avgLeadTime,
       items: rows,
-    });
+      hideStockRunoutColumns: opts?.hideStockRunoutColumns,
+    };
   }
 
-  const yearSpanLabel =
-    histYears.length > 1
-      ? `${histYears[0]}–${year}`
-      : String(year);
+  const blocks: CategoryDemandBlock[] = [];
+
+  for (const cat of CATEGORY_CONFIG) {
+    const b = demandBlockForItems(
+      cat.id,
+      cat.label,
+      cat.description,
+      productsInCategory(cat.id)
+    );
+    if (b) blocks.push(b);
+  }
+
+  for (const cat of OPATRA_CATEGORY_BLOCKS) {
+    const b = demandBlockForItems(
+      cat.id,
+      cat.label,
+      cat.description,
+      opatraProductsForBlockLabel(cat.label),
+      cat.hideStockRunoutColumns
+        ? { hideStockRunoutColumns: true }
+        : undefined
+    );
+    if (b) blocks.push(b);
+  }
+
+  const filteredBlocks =
+    shop === "all"
+      ? blocks
+      : shop === "pyt"
+        ? blocks.filter((b) => !b.id.startsWith("opatra-"))
+        : blocks.filter((b) => b.id.startsWith("opatra-"));
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold">Category demand overview</h1>
-            <p className="text-sm text-slate-400">
-              Primary year (below) drives run-out math and the highlighted column.
-              <strong className="text-slate-300">Monthly (Jan–Dec)</strong> tab
-              and Overview include all loaded years{" "}
-              <strong className="text-slate-300">{yearSpanLabel}</strong> (from{" "}
-              {EARLIEST_MONTHLY_HISTORY_YEAR} through the selected year). To load
-              older data, lower{" "}
-              <code className="text-slate-300">EARLIEST_MONTHLY_HISTORY_YEAR</code>{" "}
-              in <code className="text-slate-300">lib/categoryYears.ts</code>.
-            </p>
-          </div>
+          <h1 className="text-2xl font-semibold">Category demand overview</h1>
           <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
             ← Back to dashboard
           </Link>
@@ -274,11 +380,14 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <CategoriesShopSelect year={year} shop={shop} />
+              <span className="text-slate-600 hidden sm:inline">|</span>
               <span className="text-slate-400">Year:</span>
               {SUPPORTED_YEARS.map((y) => {
                 const params = new URLSearchParams();
                 params.set("year", String(y));
+                if (shop !== "all") params.set("shop", shop);
                 const active = y === year;
                 return (
                   <Link
@@ -298,12 +407,18 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
           </div>
         </section>
 
-        <CategoriesTabs
-          primaryYear={year}
-          historyYearsAsc={histYears}
-          daysInYearByYear={daysInYearByYear}
-          blocks={blocks}
-        />
+        {filteredBlocks.length === 0 ? (
+          <p className="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-6 text-sm text-slate-400">
+            No category demand groups match this shop filter.
+          </p>
+        ) : (
+          <CategoriesTabs
+            primaryYear={year}
+            historyYearsAsc={histYears}
+            daysInYearByYear={daysInYearByYear}
+            blocks={filteredBlocks}
+          />
+        )}
       </div>
     </main>
   );

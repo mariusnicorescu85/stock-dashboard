@@ -9,6 +9,7 @@ import {
   fetchDemandForYearMonth,
   fetchSalesTotalsAllTime,
 } from "@/lib/airtable";
+import { partitionRunoutBuckets } from "@/lib/stockBriefing";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +122,35 @@ function supplierDisplay(p: ProductRecord) {
   );
 }
 
+function shopLabel(p: ProductRecord): string {
+  const b = p.brand?.trim();
+  return b && b.length > 0 ? b : "Unknown shop";
+}
+
+function groupRunoutByShop(
+  items: ProductRecord[]
+): { shop: string; items: ProductRecord[] }[] {
+  const map = new Map<string, ProductRecord[]>();
+  for (const p of items) {
+    const shop = shopLabel(p);
+    if (!map.has(shop)) map.set(shop, []);
+    map.get(shop)!.push(p);
+  }
+  return [...map.entries()]
+    .map(([shop, list]) => ({
+      shop,
+      items: list.sort(
+        (a, b) =>
+          (a.daysUntilRunOut ?? Infinity) - (b.daysUntilRunOut ?? Infinity)
+      ),
+    }))
+    .sort((a, b) => {
+      if (a.shop === "Unknown shop") return 1;
+      if (b.shop === "Unknown shop") return -1;
+      return a.shop.localeCompare(b.shop, "en", { sensitivity: "base" });
+    });
+}
+
 function datePill(value: string | null, tone: "default" | "warn" | "danger" = "default") {
   const label = formatDate(value);
   const palette =
@@ -156,32 +186,22 @@ const demandMap = await fetchDemandForYearMonth(targetYear, targetMonth);
 const yearlyDemand = await fetchDemandForYear(targetYear);
 const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
 
-  const individuals = products.filter((p) => p.productType === "Individual");
   const combos = products.filter((p) => p.productType !== "Individual");
-
-  const needingOrder = individuals.filter((p) => p.qtyToOrder > 0);
-
+  const buckets = partitionRunoutBuckets(products);
+  const {
+    individuals,
+    needingOrder,
+    runningOut0to7,
+    runningOut8to14,
+    runningOut15to30,
+    runningOut31to60,
+  } = buckets;
   const criticalSoon = individuals.filter(
-    (p) => p.daysUntilRunOut != null && p.daysUntilRunOut <= 14
+    (p) =>
+      !p.excludeFromReorder &&
+      p.daysUntilRunOut != null &&
+      p.daysUntilRunOut <= 14
   );
-
-  const totalUnitsToOrder = needingOrder.reduce((sum, p) => sum + p.qtyToOrder, 0);
-
-  // Breakdown by time buckets for next 60 days
-  const runningOut0to7 = individuals.filter(
-    (p) => p.daysUntilRunOut != null && p.daysUntilRunOut >= 0 && p.daysUntilRunOut <= 7
-  );
-  const runningOut8to14 = individuals.filter(
-    (p) => p.daysUntilRunOut != null && p.daysUntilRunOut > 7 && p.daysUntilRunOut <= 14
-  );
-  const runningOut15to30 = individuals.filter(
-    (p) => p.daysUntilRunOut != null && p.daysUntilRunOut > 14 && p.daysUntilRunOut <= 30
-  );
-  const runningOut31to60 = individuals.filter(
-    (p) => p.daysUntilRunOut != null && p.daysUntilRunOut > 30 && p.daysUntilRunOut <= 60
-  );
-
-  
 
   // Read view mode
   const qParam = Array.isArray(sp.q) ? sp.q[0] : sp.q;
@@ -241,124 +261,47 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
           <h1 className="text-3xl font-semibold leading-tight">Stock Runway &amp; Reorder Dashboard</h1>
           <p className="text-sm text-slate-400">Live Airtable-backed view to keep runway safe and reorders timely.</p>
         </header>
-        
-
 
         {/* Detailed 60-day breakdown */}
         <section className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] space-y-4">
           <div>
             <h2 className="text-lg font-semibold">Items running out in next 60 days</h2>
             <p className="text-xs text-slate-400 mt-1">
-              Detailed breakdown by time buckets. Click any item to see full details.
+              By time bucket, grouped under each shop (Airtable Shop). Click any item for full
+              details.
             </p>
           </div>
 
-          {/* 0-7 days */}
           {runningOut0to7.length > 0 && (
-            <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-red-200">
-                  🔴 Critical: 0-7 days ({runningOut0to7.length} items)
-                </h3>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {runningOut0to7
-                  .sort((a, b) => (a.daysUntilRunOut ?? Infinity) - (b.daysUntilRunOut ?? Infinity))
-                  .map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/product/${p.id}`}
-                      className="flex items-center justify-between rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs hover:bg-red-500/20 transition-colors"
-                    >
-                      <span className="text-red-100 font-medium truncate flex-1">{p.name}</span>
-                      <span className="ml-2 text-red-200 tabular-nums whitespace-nowrap">
-                        {Math.max(0, Math.round(p.daysUntilRunOut ?? 0))}d
-                      </span>
-                    </Link>
-                  ))}
-              </div>
-            </div>
+            <RunoutBucketByShop
+              tone="critical"
+              title="🔴 Critical: 0-7 days"
+              items={runningOut0to7}
+            />
           )}
 
-          {/* 8-14 days */}
           {runningOut8to14.length > 0 && (
-            <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-amber-200">
-                  🟡 Urgent: 8-14 days ({runningOut8to14.length} items)
-                </h3>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {runningOut8to14
-                  .sort((a, b) => (a.daysUntilRunOut ?? Infinity) - (b.daysUntilRunOut ?? Infinity))
-                  .map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/product/${p.id}`}
-                      className="flex items-center justify-between rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs hover:bg-amber-500/20 transition-colors"
-                    >
-                      <span className="text-amber-100 font-medium truncate flex-1">{p.name}</span>
-                      <span className="ml-2 text-amber-200 tabular-nums whitespace-nowrap">
-                        {Math.max(0, Math.round(p.daysUntilRunOut ?? 0))}d
-                      </span>
-                    </Link>
-                  ))}
-              </div>
-            </div>
+            <RunoutBucketByShop
+              tone="urgent"
+              title="🟡 Urgent: 8-14 days"
+              items={runningOut8to14}
+            />
           )}
 
-          {/* 15-30 days */}
           {runningOut15to30.length > 0 && (
-            <div className="rounded-xl border border-blue-400/40 bg-blue-500/10 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-blue-200">
-                  🔵 Watch: 15-30 days ({runningOut15to30.length} items)
-                </h3>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {runningOut15to30
-                  .sort((a, b) => (a.daysUntilRunOut ?? Infinity) - (b.daysUntilRunOut ?? Infinity))
-                  .map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/product/${p.id}`}
-                      className="flex items-center justify-between rounded-lg border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs hover:bg-blue-500/20 transition-colors"
-                    >
-                      <span className="text-blue-100 font-medium truncate flex-1">{p.name}</span>
-                      <span className="ml-2 text-blue-200 tabular-nums whitespace-nowrap">
-                        {Math.max(0, Math.round(p.daysUntilRunOut ?? 0))}d
-                      </span>
-                    </Link>
-                  ))}
-              </div>
-            </div>
+            <RunoutBucketByShop
+              tone="watch"
+              title="🔵 Watch: 15-30 days"
+              items={runningOut15to30}
+            />
           )}
 
-          {/* 31-60 days */}
           {runningOut31to60.length > 0 && (
-            <div className="rounded-xl border border-slate-600/40 bg-slate-700/10 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-slate-300">
-                  ⚪ Planning: 31-60 days ({runningOut31to60.length} items)
-                </h3>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {runningOut31to60
-                  .sort((a, b) => (a.daysUntilRunOut ?? Infinity) - (b.daysUntilRunOut ?? Infinity))
-                  .map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/product/${p.id}`}
-                      className="flex items-center justify-between rounded-lg border border-slate-600/30 bg-slate-700/10 px-3 py-2 text-xs hover:bg-slate-700/20 transition-colors"
-                    >
-                      <span className="text-slate-200 font-medium truncate flex-1">{p.name}</span>
-                      <span className="ml-2 text-slate-300 tabular-nums whitespace-nowrap">
-                        {Math.max(0, Math.round(p.daysUntilRunOut ?? 0))}d
-                      </span>
-                    </Link>
-                  ))}
-              </div>
-            </div>
+            <RunoutBucketByShop
+              tone="planning"
+              title="⚪ Planning: 31-60 days"
+              items={runningOut31to60}
+            />
           )}
 
           {runningOut0to7.length === 0 && 
@@ -447,6 +390,12 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
       >
         Master Stock
       </Link>
+      <Link
+        href="/briefing"
+        className="h-10 inline-flex items-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 text-sm text-emerald-200 hover:bg-emerald-500/15"
+      >
+        Stock briefing
+      </Link>
     </div>
   </div>
 
@@ -485,6 +434,100 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
 }
 
 // --- Components --------------------------------------------------
+
+type RunoutBucketTone = "critical" | "urgent" | "watch" | "planning";
+
+function RunoutBucketByShop({
+  tone,
+  title,
+  items,
+}: {
+  tone: RunoutBucketTone;
+  title: string;
+  items: ProductRecord[];
+}) {
+  const palette: Record<
+    RunoutBucketTone,
+    {
+      wrap: string;
+      h3: string;
+      shop: string;
+      link: string;
+      name: string;
+      days: string;
+    }
+  > = {
+    critical: {
+      wrap: "border-red-400/40 bg-red-500/10",
+      h3: "text-red-200",
+      shop: "text-red-200/70",
+      link: "border-red-400/30 bg-red-500/10 hover:bg-red-500/20",
+      name: "text-red-100",
+      days: "text-red-200",
+    },
+    urgent: {
+      wrap: "border-amber-400/40 bg-amber-500/10",
+      h3: "text-amber-200",
+      shop: "text-amber-200/70",
+      link: "border-amber-400/30 bg-amber-500/10 hover:bg-amber-500/20",
+      name: "text-amber-100",
+      days: "text-amber-200",
+    },
+    watch: {
+      wrap: "border-blue-400/40 bg-blue-500/10",
+      h3: "text-blue-200",
+      shop: "text-blue-200/70",
+      link: "border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20",
+      name: "text-blue-100",
+      days: "text-blue-200",
+    },
+    planning: {
+      wrap: "border-slate-600/40 bg-slate-700/10",
+      h3: "text-slate-300",
+      shop: "text-slate-400",
+      link: "border-slate-600/30 bg-slate-700/10 hover:bg-slate-700/20",
+      name: "text-slate-200",
+      days: "text-slate-300",
+    },
+  };
+
+  const t = palette[tone];
+  const groups = groupRunoutByShop(items);
+  const count = items.length;
+
+  return (
+    <div className={`rounded-xl border p-3 ${t.wrap}`}>
+      <div className="mb-3">
+        <h3 className={`text-sm font-semibold ${t.h3}`}>
+          {title} ({count} items)
+        </h3>
+      </div>
+      <div className="space-y-4">
+        {groups.map(({ shop, items: shopItems }) => (
+          <div key={shop}>
+            <p className={`text-[10px] font-semibold uppercase tracking-wider mb-2 ${t.shop}`}>
+              {shop}
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {shopItems.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/product/${p.id}`}
+                  className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${t.link}`}
+                >
+                  <span className={`font-medium truncate min-w-0 flex-1 ${t.name}`}>{p.name}</span>
+                  <span className={`tabular-nums whitespace-nowrap shrink-0 ${t.days}`}>
+                    {Math.max(0, Math.round(p.daysUntilRunOut ?? 0))}d
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function KPI({ 
   label, 

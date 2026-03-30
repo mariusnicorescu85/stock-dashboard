@@ -37,6 +37,8 @@ export type CategoryDemandBlock = {
   totalDailyDemand: number;
   avgLeadTime: number;
   items: CategoryDemandRow[];
+  /** When true, overview table omits current stock, incoming, and run-out (e.g. combo demand-only). */
+  hideStockRunoutColumns?: boolean;
 };
 
 function sliceForYear(row: CategoryDemandRow, calYear: number): YearSalesSlice {
@@ -47,6 +49,11 @@ function sliceForYear(row: CategoryDemandRow, calYear: number): YearSalesSlice {
       months: Array(12).fill(0),
     }
   );
+}
+
+/** Stable row order across year selection (sorting by volume made rows jump when primary year changed). */
+function compareRowsByProductName(a: CategoryDemandRow, b: CategoryDemandRow): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
 type TabId = "overview" | "monthly";
@@ -154,11 +161,7 @@ function MonthlyTable(props: {
   mode: "units" | "daily";
 }) {
   const { label, calYear, daysInCalYear, block, mode } = props;
-  const sorted = [...block.items].sort((a, b) => {
-    const ta = sliceForYear(a, calYear).totalUnits;
-    const tb = sliceForYear(b, calYear).totalUnits;
-    return tb - ta;
-  });
+  const sorted = [...block.items].sort(compareRowsByProductName);
   const totalUnits =
     block.totalsByYear.find((t) => t.year === calYear)?.total ?? 0;
 
@@ -383,13 +386,15 @@ export default function CategoriesTabs(props: Props) {
                 </div>
               </div>
 
-              <CategoryWhatIfPanel
-                label={block.label}
-                initialCurrentStock={block.totalCurrentStock}
-                initialIncomingStock={block.totalIncomingStock}
-                initialDailyDemand={block.totalDailyDemand}
-                initialLeadTimeDays={block.avgLeadTime}
-              />
+              {!block.hideStockRunoutColumns && (
+                <CategoryWhatIfPanel
+                  label={block.label}
+                  initialCurrentStock={block.totalCurrentStock}
+                  initialIncomingStock={block.totalIncomingStock}
+                  initialDailyDemand={block.totalDailyDemand}
+                  initialLeadTimeDays={block.avgLeadTime}
+                />
+              )}
 
               <div className="overflow-x-auto rounded-xl border border-slate-800/80 bg-slate-950/70">
                 <table className="min-w-[720px] w-full text-sm">
@@ -415,20 +420,20 @@ export default function CategoriesTabs(props: Props) {
                       <th className="px-3 py-2 text-right whitespace-nowrap">
                         Sheet daily
                       </th>
-                      <th className="px-3 py-2 text-right">Current stock</th>
-                      <th className="px-3 py-2 text-right">Incoming</th>
-                      <th className="px-3 py-2 text-right">Run-out</th>
+                      {!block.hideStockRunoutColumns && (
+                        <>
+                          <th className="px-3 py-2 text-right">Current stock</th>
+                          <th className="px-3 py-2 text-right">Incoming</th>
+                          <th className="px-3 py-2 text-right">Run-out</th>
+                        </>
+                      )}
                       <th className="px-3 py-2 text-right">Order-by</th>
                       <th className="px-3 py-2 text-right">Qty to order</th>
                     </tr>
                   </thead>
                   <tbody>
                     {[...block.items]
-                      .sort(
-                        (a, b) =>
-                          sliceForYear(b, primaryYear).totalUnits -
-                          sliceForYear(a, primaryYear).totalUnits
-                      )
+                      .sort(compareRowsByProductName)
                       .map((row) => {
                         const primarySlice = sliceForYear(row, primaryYear);
                         const yearlyDaily =
@@ -472,15 +477,19 @@ export default function CategoriesTabs(props: Props) {
                             <td className="px-3 py-2 text-right text-xs tabular-nums text-slate-300">
                               {fmtDemandRate(row.sheetDaily)}
                             </td>
-                            <td className="px-3 py-2 text-right tabular-nums">
-                              {row.currentStock}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums">
-                              {row.incomingStockTotal}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums">
-                              {row.runOut ?? "—"}
-                            </td>
+                            {!block.hideStockRunoutColumns && (
+                              <>
+                                <td className="px-3 py-2 text-right tabular-nums">
+                                  {row.currentStock}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums">
+                                  {row.incomingStockTotal}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums">
+                                  {row.runOut ?? "—"}
+                                </td>
+                              </>
+                            )}
                             <td className="px-3 py-2 text-right tabular-nums">
                               {row.orderBy ?? "—"}
                             </td>

@@ -1,5 +1,6 @@
 // app/product/[id]/page.tsx
 import { fetchProducts, fetchMonthlySalesForProduct } from "@/lib/airtable";
+import { coverBufferDaysFromEnv } from "@/lib/reorderQty";
 import SalesHistoryChart, { type SalesHistoryPoint } from "@/app/components/SalesHistoryChart";
 import WhatIfPanel from "./WhatIfPanel";
 
@@ -27,6 +28,7 @@ export default async function ProductDetailPage({
   params: ParamsPromise;
 }) {
   const { id } = await params;
+  const coverBufferDays = coverBufferDaysFromEnv();
 
   const products = await fetchProducts();
   const product = products.find((p) => p.id === id);
@@ -203,6 +205,10 @@ const trendLabel =
             </p>
             <p className="mt-1 text-xs text-slate-400">
               Order by: {formatDate(product.orderByDate)}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Qty fills the gap to target cover: (lead time + {coverBufferDays} buffer days) × daily
+              demand, minus effective stock (current + incoming).
             </p>
           </div>
         </section>

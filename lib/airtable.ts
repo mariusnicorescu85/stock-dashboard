@@ -1,5 +1,8 @@
 // lib/airtable.ts
 
+import { dateToYmd } from "./calendar";
+import { computeQtyToOrder, coverBufferDaysFromEnv } from "./reorderQty";
+
 export type ProductRecord = {
   id: string;
   name: string;
@@ -21,7 +24,11 @@ export type ProductRecord = {
   daysUntilRunOut: number | null;
   runOutDate: string | null;
   orderByDate: string | null;
+  /** Units to order: computed in app (lead time + cover buffer × daily demand − effective stock). */
   qtyToOrder: number;
+
+  /** When true (Airtable checkbox), product is omitted from the dashboard Reorder queue (e.g. clearance). */
+  excludeFromReorder: boolean;
 };
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!;
@@ -48,6 +55,99 @@ type AirtableRecord = {
   id: string;
   fields: Record<string, any>;
 };
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Airtable free tier/low limits: avoid bursting dozens of parallel list requests. */
+async function airtableFetchWithRetry(
+  url: string,
+  init: RequestInit,
+  context: string
+): Promise<Response> {
+  const maxAttempts = 6;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch(url, init);
+
+    if (res.ok) return res;
+
+    const text = await res.text();
+
+    const rateLimit =
+      res.status === 429 ||
+      text.includes("RATE_LIMIT_REACHED") ||
+      text.includes('"error":"RATE_LIMIT');
+
+    if (rateLimit && attempt < maxAttempts) {
+      const waitMs = Math.min(45_000, 900 * 2 ** (attempt - 1));
+      console.warn(
+        `Airtable rate limit (${context}), retry ${attempt}/${maxAttempts} in ${waitMs}ms`
+      );
+      await sleep(waitMs);
+      continue;
+    }
+
+    console.error(`Airtable error (${context}):`, text);
+    throw new Error(`Failed to fetch ${context}`);
+  }
+
+  throw new Error(`Failed to fetch ${context} after ${maxAttempts} attempts`);
+}
+
+function recomputeProductRunway(p: ProductRecord, today = new Date()) {
+  let daysUntilRunOut: number | null = null;
+
+  if (p.dailyDemand > 0) {
+    daysUntilRunOut = p.effectiveStock / p.dailyDemand;
+  }
+  if (p.effectiveStock === 0) {
+    daysUntilRunOut = 0;
+  }
+
+  p.daysUntilRunOut = daysUntilRunOut;
+
+  let runOutDate: string | null = null;
+  let orderByDate: string | null = null;
+
+  if (daysUntilRunOut != null) {
+    const runOut = new Date(today);
+    runOut.setDate(runOut.getDate() + Math.round(daysUntilRunOut));
+    // Use calendar YMD from local components — not toISOString() (UTC), which shifts dates vs setDate().
+    runOutDate = dateToYmd(runOut);
+
+    if (p.leadTimeDays != null) {
+      const lead = Math.round(Number(p.leadTimeDays));
+      const orderBy = new Date(runOut);
+      orderBy.setDate(orderBy.getDate() - lead);
+      // True calendar order-by (can be in the past if lead time > runway). Do not clamp to “today” —
+      // that made “days left” and “order by” look inconsistent.
+      orderByDate = dateToYmd(orderBy);
+    }
+  }
+
+  p.runOutDate = runOutDate;
+  p.orderByDate = orderByDate;
+}
+
+/** Same calendar month, prior year — matches dashboard / product detail “same month last year”. */
+function referenceYearMonthForDemand(now = new Date()) {
+  return {
+    year: now.getFullYear() - 1,
+    month: now.getMonth() + 1,
+  };
+}
+
+function demandUnitsForProductName(map: Map<string, number>, name: string): number | undefined {
+  const trimmed = name.trim();
+  if (!trimmed) return undefined;
+  if (map.has(trimmed)) return map.get(trimmed);
+  const lower = trimmed.toLowerCase();
+  for (const [k, v] of map.entries()) {
+    if (k.trim().toLowerCase() === lower) return v;
+  }
+  return undefined;
+}
 
 // -----------------------------
 // Supplier helpers
@@ -136,16 +236,6 @@ async function fetchProductsFromTable(tableName: string): Promise<ProductRecord[
       }
     }
 
-    // ---- runway ----
-    let daysUntilRunOut: number | null = null;
-
-    if (dailyDemand > 0) {
-      daysUntilRunOut = effectiveStock / dailyDemand;
-    }
-    if (effectiveStock === 0) {
-      daysUntilRunOut = 0;
-    }
-
     // ---- lead time ----
     const leadTimeDays =
       f["Lead Time (Days)"] != null
@@ -154,25 +244,13 @@ async function fetchProductsFromTable(tableName: string): Promise<ProductRecord[
         ? Number(f["Lead Time - Days"])
         : null;
 
-    // ---- dates (COMPUTED, NOT AIRTABLE) ----
-    const today = new Date();
+    const excludeFromReorder =
+      f["Exclude from reorder"] === true ||
+      f["Exclude From Reorder"] === true ||
+      f["No reorder"] === true ||
+      f["Clearance (no reorder)"] === true;
 
-    let runOutDate: string | null = null;
-    let orderByDate: string | null = null;
-
-    if (daysUntilRunOut != null) {
-      const runOut = new Date(today);
-      runOut.setDate(runOut.getDate() + Math.round(daysUntilRunOut));
-      runOutDate = runOut.toISOString().slice(0, 10);
-
-      if (leadTimeDays != null) {
-        const orderBy = new Date(runOut);
-        orderBy.setDate(orderBy.getDate() - leadTimeDays);
-        orderByDate = orderBy.toISOString().slice(0, 10);
-      }
-    }
-
-    return {
+    const record: ProductRecord = {
       id: r.id,
       name: String(f["Product"] ?? ""),
       brand: f["Shop"],
@@ -190,20 +268,27 @@ async function fetchProductsFromTable(tableName: string): Promise<ProductRecord[
       totalDemandThisMonth,
       dailyDemand,
 
-      daysUntilRunOut,
-      runOutDate,
-      orderByDate,
+      daysUntilRunOut: null,
+      runOutDate: null,
+      orderByDate: null,
 
-      qtyToOrder: Number(f["quantity to order"] ?? f["Quantity To Order"] ?? 0),
+      qtyToOrder: 0,
+      excludeFromReorder,
     };
+
+    recomputeProductRunway(record);
+    return record;
   });
 }
 
 export async function fetchProducts(): Promise<ProductRecord[]> {
   const tables = [AIRTABLE_PRODUCTS_TABLE, AIRTABLE_PYT_PRODUCTS_TABLE];
+  const now = new Date();
+  const { year: refYear, month: refMonth } = referenceYearMonthForDemand(now);
 
-  const [supplierMap, ...productBatches] = await Promise.all([
+  const [supplierMap, demandMap, ...productBatches] = await Promise.all([
     fetchSuppliers(),
+    fetchDemandForYearMonth(refYear, refMonth),
     ...tables.map((t) => fetchProductsFromTable(t)),
   ]);
 
@@ -212,6 +297,23 @@ export async function fetchProducts(): Promise<ProductRecord[]> {
   for (const p of products) {
     if (p.supplier1 && supplierMap[p.supplier1]) p.supplier1 = supplierMap[p.supplier1];
     if (p.supplier2 && supplierMap[p.supplier2]) p.supplier2 = supplierMap[p.supplier2];
+  }
+
+  const daysInThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+  for (const p of products) {
+    const units = demandUnitsForProductName(demandMap, p.name);
+    if (units === undefined) continue;
+
+    p.totalDemandThisMonth = units;
+    p.dailyDemand =
+      units > 0 && daysInThisMonth > 0 ? units / daysInThisMonth : 0;
+    recomputeProductRunway(p, now);
+  }
+
+  const coverBufferDays = coverBufferDaysFromEnv();
+  for (const p of products) {
+    p.qtyToOrder = computeQtyToOrder(p, coverBufferDays);
   }
 
   return products;
@@ -229,15 +331,14 @@ export async function fetchDemandForYearMonth(year: number, month: number) {
       const formula = `AND({Year}=${year}, {Month}=${month})`;
       url.searchParams.set("filterByFormula", formula);
 
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
-        next: { revalidate: 300 },
-      });
-
-      if (!res.ok) {
-        console.error("Airtable error (demand year-month):", await res.text());
-        throw new Error(`Failed to fetch monthly demand from ${tableName}`);
-      }
+      const res = await airtableFetchWithRetry(
+        url.toString(),
+        {
+          headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
+          next: { revalidate: 300 },
+        },
+        `monthly demand ${tableName} ${year}-${month}`
+      );
 
       const data = await res.json();
       const records: AirtableRecord[] = data.records || [];
@@ -283,9 +384,10 @@ export async function fetchDemandForYearMonth(year: number, month: number) {
 export async function fetchDemandBreakdownForYear(
   year: number
 ): Promise<Map<string, number[]>> {
-  const monthMaps = await Promise.all(
-    Array.from({ length: 12 }, (_, i) => fetchDemandForYearMonth(year, i + 1))
-  );
+  const monthMaps: Map<string, number>[] = [];
+  for (let m = 1; m <= 12; m++) {
+    monthMaps.push(await fetchDemandForYearMonth(year, m));
+  }
 
   const byProduct = new Map<string, number[]>();
 

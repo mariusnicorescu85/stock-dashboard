@@ -1,8 +1,8 @@
 /**
  * Oldest calendar year to load from Monthly Sales / PYT Monthly Sales.
- * Extend if you have older rows in Airtable.
+ * Raise or lower if your Airtable history starts later or earlier.
  */
-export const EARLIEST_MONTHLY_HISTORY_YEAR = 2022;
+export const EARLIEST_MONTHLY_HISTORY_YEAR = 2024;
 
 /** Inclusive range of years [floor … primaryYear], ascending. */
 export function monthlyHistoryYearsUpTo(
