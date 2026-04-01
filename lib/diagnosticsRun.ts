@@ -162,6 +162,34 @@ export async function runDiagnostics(): Promise<DiagnosticsReport> {
     );
   }
 
+  // --- Optional: Gmail SMTP (buying list) ---
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  const gmailPass = process.env.GMAIL_APP_PASSWORD?.trim();
+  if (!gmailUser || !gmailPass) {
+    push(
+      checks,
+      "gmail-smtp",
+      nextOrder(),
+      "Gmail SMTP (buying list attachment email)",
+      "Optional: GMAIL_USER + GMAIL_APP_PASSWORD send “Email CSV (SMTP)” from /buying-list.",
+      "warn",
+      "Not set — use Draft in Gmail / mailto, or add an app password and redeploy."
+    );
+  } else {
+    const defaultTo = process.env.BUYING_LIST_EMAIL_TO?.trim();
+    push(
+      checks,
+      "gmail-smtp",
+      nextOrder(),
+      "Gmail SMTP (buying list attachment email)",
+      "Optional: GMAIL_USER + GMAIL_APP_PASSWORD send “Email CSV (SMTP)” from /buying-list.",
+      "ok",
+      defaultTo
+        ? `Credentials present; default recipient BUYING_LIST_EMAIL_TO is set.`
+        : `Credentials present; enter recipient on the page or set BUYING_LIST_EMAIL_TO.`
+    );
+  }
+
   // --- Cron & email ---
   const cronSecret = process.env.CRON_SECRET?.trim();
   if (!cronSecret) {

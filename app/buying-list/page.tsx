@@ -2,7 +2,8 @@ import Link from "next/link";
 import { fetchProducts } from "@/lib/airtable";
 import { filterProductsByShop, parseShopFilter, shopFilterLabel } from "@/lib/shopFilter";
 import { partitionRunoutBuckets } from "@/lib/stockBriefing";
-import BuyingListClient, { type BuyingListRow } from "./BuyingListClient";
+import type { BuyingListRow } from "@/lib/buyingListCsv";
+import BuyingListClient from "./BuyingListClient";
 import BuyingListShopSelect from "./BuyingListShopSelect";
 
 export const dynamic = "force-dynamic";

@@ -5,73 +5,22 @@ import { useCallback, useMemo, useState } from "react";
 import AirtableBriefingTools from "@/app/briefing/AirtableBriefingTools";
 import BriefingProductSignalButtons from "@/app/briefing/BriefingProductSignalButtons";
 import {
+  buildBuyingListCsv,
+  buyingListCsvFilename,
+  formatOrderByForCsv,
+  type BuyingListRow,
+} from "@/lib/buyingListCsv";
+import {
   formatMoney,
   formatMoneyOptional,
   formatReorderTotalsEurUsd,
-  type PurchaseCurrency,
 } from "@/lib/money";
 
-export type BuyingListRow = {
-  id: string;
-  name: string;
-  brand: string | null;
-  qtyToOrder: number;
-  pricePerUnit: number | null;
-  purchaseCurrency: PurchaseCurrency;
-  orderByDate: string | null;
-  /** Airtable table for PATCH (Products / PYT Products). */
-  airtableTable: string;
-};
+export type { BuyingListRow };
 
-function formatOrderBy(ymd: string | null) {
-  if (!ymd) return "—";
-  const d = new Date(ymd);
-  if (Number.isNaN(d.getTime())) return ymd;
-  return d.toLocaleDateString("en-GB");
-}
-
-function csvEscape(value: string) {
-  if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
-  return value;
-}
-
-function buildCsv(rows: Array<BuyingListRow & { qty: number }>) {
-  const header = [
-    "Product",
-    "Brand",
-    "Qty to order",
-    "Price per unit (supplier ccy)",
-    "Line total (supplier ccy)",
-    "Order by",
-  ]
-    .map(csvEscape)
-    .join(",");
-  const body = rows.map((r) => {
-    const q = Math.max(0, r.qty);
-    const unit = r.pricePerUnit != null ? String(r.pricePerUnit) : "";
-    const line =
-      r.pricePerUnit != null && Number.isFinite(r.pricePerUnit)
-        ? String(Math.round(q * r.pricePerUnit * 100) / 100)
-        : "";
-    return [
-      csvEscape(r.name),
-      csvEscape(r.brand ?? ""),
-      String(q),
-      unit,
-      line,
-      csvEscape(formatOrderBy(r.orderByDate)),
-    ].join(",");
-  });
-  return [header, ...body].join("\r\n");
-}
+const CRON_SECRET_STORAGE_KEY = "stock-dash-cron-secret";
 
 const MAILTO_BODY_MAX = 1800;
-
-function buyingListCsvFilename(shopLabel: string) {
-  const safe =
-    shopLabel.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-") || "buying-list";
-  return `${safe}-${new Date().toISOString().slice(0, 10)}.csv`;
-}
 
 export default function BuyingListClient({
   rows,
@@ -87,6 +36,10 @@ export default function BuyingListClient({
     for (const r of rows) m[r.id] = r.qtyToOrder;
     return m;
   });
+
+  const [smtpTo, setSmtpTo] = useState("");
+  const [smtpMessage, setSmtpMessage] = useState<string | null>(null);
+  const [smtpBusy, setSmtpBusy] = useState(false);
 
   const merged = useMemo(
     () => rows.map((r) => ({ ...r, qty: qtyById[r.id] ?? 0 })),
@@ -134,20 +87,89 @@ export default function BuyingListClient({
     setQtyById((prev) => ({ ...prev, [id]: Number.isFinite(n) ? Math.max(0, n) : 0 }));
   }, []);
 
-  const downloadCsvToFile = useCallback((filename: string) => {
-    const csv = buildCsv(merged);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [merged]);
+  const downloadCsvToFile = useCallback(
+    (filename: string) => {
+      const csv = buildBuyingListCsv(merged);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    [merged]
+  );
 
   const downloadCsv = useCallback(() => {
     downloadCsvToFile(buyingListCsvFilename(shopLabel));
   }, [downloadCsvToFile, shopLabel]);
+
+  const smtpTextBody = useMemo(() => {
+    const valueLine =
+      totalValueEur > 0 || totalValueUsd > 0
+        ? `\nKnown line value (supplier currency, not £): ${formatReorderTotalsEurUsd(totalValueEur, totalValueUsd)}` +
+          (linesMissingPrice > 0 ? ` (${linesMissingPrice} line(s) missing unit price)` : "")
+        : "";
+    return (
+      `Buying list for ${shopLabel}\n${dateLabel}\n\n` +
+      `Total units: ${totalUnits}${valueLine}\n\n` +
+      `Full line items are in the attached CSV (you can edit it and forward).`
+    );
+  }, [
+    shopLabel,
+    dateLabel,
+    totalUnits,
+    totalValueEur,
+    totalValueUsd,
+    linesMissingPrice,
+  ]);
+
+  const sendViaGmailSmtp = useCallback(async () => {
+    setSmtpMessage(null);
+    let secret = "";
+    try {
+      secret = sessionStorage.getItem(CRON_SECRET_STORAGE_KEY) ?? "";
+    } catch {
+      /* ignore */
+    }
+    if (!secret.trim()) {
+      setSmtpMessage("Enter your cron secret above first (same as CRON_SECRET).");
+      return;
+    }
+
+    const filename = buyingListCsvFilename(shopLabel);
+    const csv = buildBuyingListCsv(merged);
+    const subject = `Buying list — ${shopLabel} — ${dateLabel}`;
+
+    setSmtpBusy(true);
+    try {
+      const res = await fetch("/api/buying-list/email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${secret.trim()}`,
+        },
+        body: JSON.stringify({
+          to: smtpTo.trim(),
+          subject,
+          textBody: smtpTextBody,
+          csv,
+          csvFilename: filename,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setSmtpMessage(data.error || `Send failed (${res.status}).`);
+        return;
+      }
+      setSmtpMessage("Sent. Check the recipient inbox (and spam).");
+    } catch {
+      setSmtpMessage("Network error — try again.");
+    } finally {
+      setSmtpBusy(false);
+    }
+  }, [merged, shopLabel, dateLabel, smtpTextBody, smtpTo]);
 
   const openGmailWithCsv = useCallback(() => {
     const filename = buyingListCsvFilename(shopLabel);
@@ -187,7 +209,7 @@ export default function BuyingListClient({
         r.pricePerUnit != null && Number.isFinite(r.pricePerUnit)
           ? ` · ${formatMoney(q * r.pricePerUnit, r.purchaseCurrency)} (${formatMoney(r.pricePerUnit, r.purchaseCurrency)} ea)`
           : "";
-      return `${i + 1}. ${r.name} — ${q} units${extra} (order by ${formatOrderBy(r.orderByDate)})`;
+      return `${i + 1}. ${r.name} — ${q} units${extra} (order by ${formatOrderByForCsv(r.orderByDate)})`;
     });
     const valueLine =
       totalValueEur > 0 || totalValueUsd > 0
@@ -256,7 +278,7 @@ export default function BuyingListClient({
             onClick={openGmailWithCsv}
             className="h-10 inline-flex items-center justify-center rounded-xl bg-emerald-500/90 px-4 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
           >
-            Send in Gmail
+            Draft in Gmail
           </button>
           <a
             href={mailtoHref}
@@ -265,6 +287,39 @@ export default function BuyingListClient({
             Other mail app
           </a>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-800/80 bg-slate-900/30 px-4 py-3 space-y-2">
+        <p className="text-xs text-slate-500">
+          Send from server via Gmail SMTP (needs <span className="text-slate-400">GMAIL_USER</span> +{" "}
+          <span className="text-slate-400">GMAIL_APP_PASSWORD</span> on Vercel / <span className="text-slate-400">.env.local</span>
+          ). Uses the same cron secret as above.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <input
+            type="email"
+            value={smtpTo}
+            onChange={(e) => setSmtpTo(e.target.value)}
+            placeholder="Recipient (optional if server sets BUYING_LIST_EMAIL_TO)"
+            autoComplete="email"
+            className="h-10 w-full sm:w-72 rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+          />
+          <button
+            type="button"
+            disabled={smtpBusy}
+            onClick={sendViaGmailSmtp}
+            className="h-10 inline-flex items-center justify-center rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 text-sm font-semibold text-amber-100 hover:bg-amber-500/25 disabled:opacity-50"
+          >
+            {smtpBusy ? "Sending…" : "Email CSV (SMTP)"}
+          </button>
+        </div>
+        {smtpMessage ? (
+          <p
+            className={`text-xs ${smtpMessage.startsWith("Sent.") ? "text-emerald-300/90" : "text-rose-300/90"}`}
+          >
+            {smtpMessage}
+          </p>
+        ) : null}
       </div>
 
       <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 shadow-[0_20px_70px_rgba(0,0,0,0.45)] overflow-x-auto">
@@ -289,7 +344,7 @@ export default function BuyingListClient({
               >
                 <td className="px-4 py-3 text-slate-100 font-medium">{r.name}</td>
                 <td className="px-4 py-3 text-slate-400 hidden sm:table-cell">{r.brand ?? "—"}</td>
-                <td className="px-4 py-3 text-slate-300 tabular-nums">{formatOrderBy(r.orderByDate)}</td>
+                <td className="px-4 py-3 text-slate-300 tabular-nums">{formatOrderByForCsv(r.orderByDate)}</td>
                 <td className="px-4 py-3 text-right">
                   <input
                     type="number"
@@ -328,12 +383,12 @@ export default function BuyingListClient({
       </div>
 
       <p className="text-xs text-slate-500">
-        “Send in Gmail” downloads the CSV and opens a Gmail compose window. Browsers cannot auto-attach files, so
-        attach the CSV from your downloads folder (edit it in Sheets or Excel first if you like). “Other mail
-        app” uses a draft in your default client (long lists may be shortened there — the CSV is always complete).
-        Quantities you change here are used for CSV and drafts only; they do not update Airtable. The{" "}
-        <strong className="text-slate-400">Airtable</strong> column updates snooze / order-placed dates in Airtable
-        (use the cron secret above).
+        “Draft in Gmail” downloads the CSV and opens a compose tab — attach the file from Downloads yourself. “Email
+        CSV (SMTP)” sends from your configured Gmail account with the CSV attached. You can skip the recipient field
+        if the server has <span className="text-slate-400">BUYING_LIST_EMAIL_TO</span> set. “Other mail app” uses your
+        default client (long lists may be shortened; the CSV is always complete). Quantities here are for export /
+        email only; they do not update Airtable. The <strong className="text-slate-400">Airtable</strong> column updates
+        snooze / order dates (use the cron secret above).
       </p>
     </div>
   );
