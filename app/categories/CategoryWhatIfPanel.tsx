@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { computeStockDerived, fmtGB } from "@/lib/StockMath";
+import { roundDemandRate2 } from "@/lib/categoryDemandDisplay";
 
 type Props = {
   label: string;
@@ -20,8 +21,14 @@ export default function CategoryWhatIfPanel({
 }: Props) {
   const [cur, setCur] = useState<number>(initialCurrentStock);
   const [incoming, setIncoming] = useState<number>(initialIncomingStock);
-  const [daily, setDaily] = useState<number>(initialDailyDemand);
+  const [daily, setDaily] = useState<number>(() =>
+    roundDemandRate2(initialDailyDemand)
+  );
   const [lead, setLead] = useState<number>(initialLeadTimeDays);
+
+  useEffect(() => {
+    setDaily(roundDemandRate2(initialDailyDemand));
+  }, [initialDailyDemand]);
 
   const derived = computeStockDerived({
     currentStock: cur,
@@ -81,9 +88,11 @@ export default function CategoryWhatIfPanel({
               type="number"
               className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-sm text-slate-100"
               value={daily}
-              onChange={(e) => setDaily(Number(e.target.value) || 0)}
+              onChange={(e) =>
+                setDaily(roundDemandRate2(Number(e.target.value) || 0))
+              }
               min={0}
-              step={0.1}
+              step={0.01}
             />
           </label>
 

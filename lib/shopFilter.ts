@@ -2,6 +2,20 @@ import type { ProductRecord } from "./airtable";
 
 export type ShopFilter = "all" | "pyt" | "opatra";
 
+/** Calendar days from order to stock on hand — used when briefing decisions compare runway vs supplier time. */
+export const SHOP_SUPPLIER_LEAD_DAYS = {
+  pyt: 60,
+  opatra: 14,
+} as const;
+
+/** Resolves by Airtable “Shop” / brand text (same rules as filters). Returns null if unknown — then use Airtable per-SKU lead if needed. */
+export function supplierLeadDaysForBrand(brand: string | undefined): number | null {
+  if (!brand) return null;
+  if (brand.toLowerCase().includes("pyt")) return SHOP_SUPPLIER_LEAD_DAYS.pyt;
+  if (brand.includes("Opatra")) return SHOP_SUPPLIER_LEAD_DAYS.opatra;
+  return null;
+}
+
 export function parseShopFilter(
   raw: string | string[] | undefined
 ): ShopFilter {

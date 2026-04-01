@@ -1,5 +1,6 @@
 // app/product/[id]/page.tsx
 import { fetchProducts, fetchMonthlySalesForProduct } from "@/lib/airtable";
+import { formatMoneyForBrandOptional } from "@/lib/money";
 import { coverBufferDaysFromEnv } from "@/lib/reorderQty";
 import SalesHistoryChart, { type SalesHistoryPoint } from "@/app/components/SalesHistoryChart";
 import WhatIfPanel from "./WhatIfPanel";
@@ -207,9 +208,45 @@ const trendLabel =
               Order by: {formatDate(product.orderByDate)}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Qty fills the gap to target cover: (lead time + {coverBufferDays} buffer days) × daily
-              demand, minus effective stock (current + incoming).
+              Target-cover gap before supplier rules:{" "}
+              <span className="text-slate-400 tabular-nums">{product.qtyToOrderRaw}</span>
+              {product.qtyToOrderRaw !== product.qtyToOrder ? (
+                <>
+                  {" "}
+                  → rounded to <span className="text-emerald-200/90 tabular-nums">{product.qtyToOrder}</span>{" "}
+                  (MOQ / pack)
+                </>
+              ) : null}{" "}
+              — (lead + {coverBufferDays}d buffer) × daily demand − effective stock.
             </p>
+            {(product.orderMoq != null || product.orderPackSize != null) && (
+              <p className="mt-1 text-xs text-slate-500">
+                Airtable supplier rules:{" "}
+                {[product.orderMoq != null ? `MOQ ${product.orderMoq}` : null, product.orderPackSize != null ? `Pack ${product.orderPackSize}` : null]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+            {product.pricePerUnit != null ? (
+              <p className="mt-2 text-xs text-slate-400">
+                Unit price (Airtable, {product.purchaseCurrency}):{" "}
+                <span className="text-slate-200 tabular-nums">
+                  {formatMoneyForBrandOptional(product.brand, product.pricePerUnit)}
+                </span>
+                {product.qtyToOrder > 0 ? (
+                  <>
+                    {" "}
+                    → order value at list qty{" "}
+                    <span className="text-emerald-200/90 tabular-nums font-medium">
+                      {formatMoneyForBrandOptional(
+                        product.brand,
+                        product.qtyToOrder * product.pricePerUnit
+                      )}
+                    </span>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
           </div>
         </section>
 

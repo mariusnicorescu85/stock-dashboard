@@ -24,7 +24,7 @@ export type StockDigestPayload = {
   html: string;
 };
 
-/** Loads products, builds briefing, and renders the same email body used for Resend. */
+/** Loads products, builds briefing, and renders email subject/body (HTML + plain text). */
 export async function loadStockDigestEmail(): Promise<StockDigestPayload> {
   const products = await fetchProducts();
   const briefing = buildStockBriefing(products);

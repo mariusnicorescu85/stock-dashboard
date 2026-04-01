@@ -1,7 +1,16 @@
 // lib/airtable.ts
 
 import { dateToYmd } from "./calendar";
-import { computeQtyToOrder, coverBufferDaysFromEnv } from "./reorderQty";
+import {
+  inferPurchaseCurrencyFromBrand,
+  parseMoneyish,
+  type PurchaseCurrency,
+} from "./money";
+import {
+  applySupplierOrderConstraints,
+  computeRawQtyToOrder,
+  coverBufferDaysFromEnv,
+} from "./reorderQty";
 
 export type ProductRecord = {
   id: string;
@@ -24,11 +33,39 @@ export type ProductRecord = {
   daysUntilRunOut: number | null;
   runOutDate: string | null;
   orderByDate: string | null;
-  /** Units to order: computed in app (lead time + cover buffer × daily demand − effective stock). */
+  /** Units to order: computed in app (target cover), then MOQ + pack rounding if set in Airtable. */
   qtyToOrder: number;
+  /** Units needed before MOQ / case rounding (for transparency). */
+  qtyToOrderRaw: number;
+  /** Minimum order quantity from Airtable (optional). */
+  orderMoq: number | null;
+  /** Case / pack size — order qty rounds up to a multiple (optional). */
+  orderPackSize: number | null;
+
+  /**
+   * Buy / unit cost from Airtable in {@link purchaseCurrency} (no conversion to GBP in-app).
+   */
+  pricePerUnit: number | null;
+
+  /** Supplier invoice currency for this row (from shop brand heuristic). */
+  purchaseCurrency: PurchaseCurrency;
 
   /** When true (Airtable checkbox), product is omitted from the dashboard Reorder queue (e.g. clearance). */
   excludeFromReorder: boolean;
+
+  /** Which Airtable table this row was loaded from (for PATCH from the app). */
+  airtableTable: string;
+
+  /**
+   * Airtable date — while ≥ server “today”, line-level briefing nags (hero/lead gap) are skipped.
+   * Field names: "Briefing snooze until" or "Briefing Snooze Until".
+   */
+  briefingSnoozeUntil: string | null;
+  /**
+   * Airtable date — buyer marked a PO placed; shown on the buying list; does not hide stock risk.
+   * Field names: "Briefing ordered at", "Briefing Ordered At", "Reorder placed at".
+   */
+  briefingOrderedAt: string | null;
 };
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!;
@@ -182,7 +219,52 @@ async function fetchSuppliers(): Promise<Record<string, string>> {
 // Product helpers
 // -----------------------------
 
-async function fetchProductsFromTable(tableName: string): Promise<ProductRecord[]> {
+function airtableDateFieldToYmd(f: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const key of keys) {
+    const v = f[key];
+    if (v == null || v === "") continue;
+    if (typeof v === "string") {
+      const m = v.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (m) return m[1]!;
+    }
+  }
+  return null;
+}
+
+function firstPositiveIntField(
+  f: Record<string, unknown>,
+  ...keys: string[]
+): number | null {
+  for (const key of keys) {
+    const v = f[key];
+    if (v == null || v === "") continue;
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 0) return Math.floor(n);
+  }
+  return null;
+}
+
+function pricePerUnitFromFields(f: Record<string, unknown>): number | null {
+  const keys = [
+    "Price Per Unit",
+    "Price per unit",
+    "Unit price",
+    "Unit Price",
+    "Cost per unit",
+    "Cost Per Unit",
+    "Buy price",
+    "Buy Price",
+  ];
+  for (const key of keys) {
+    const n = parseMoneyish(f[key]);
+    if (n != null) return n;
+  }
+  return null;
+}
+
+async function fetchProductsFromTable(
+  tableName: string
+): Promise<ProductRecord[]> {
   const url = new URL(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(tableName)}`
   );
@@ -250,6 +332,42 @@ async function fetchProductsFromTable(tableName: string): Promise<ProductRecord[
       f["No reorder"] === true ||
       f["Clearance (no reorder)"] === true;
 
+    const briefingSnoozeUntil = airtableDateFieldToYmd(
+      f as Record<string, unknown>,
+      "Briefing snooze until",
+      "Briefing Snooze Until"
+    );
+    const briefingOrderedAt = airtableDateFieldToYmd(
+      f as Record<string, unknown>,
+      "Briefing ordered at",
+      "Briefing Ordered At",
+      "Reorder placed at",
+      "Reorder Placed At"
+    );
+
+    const orderMoq = firstPositiveIntField(
+      f as Record<string, unknown>,
+      "MOQ",
+      "Minimum order qty",
+      "Min order qty",
+      "Minimum Order Qty",
+      "Minimum Order Quantity"
+    );
+    const orderPackSize = firstPositiveIntField(
+      f as Record<string, unknown>,
+      "Case pack",
+      "Pack size",
+      "Units per case",
+      "Units Per Case",
+      "Order pack size",
+      "Case size"
+    );
+
+    const pricePerUnit = pricePerUnitFromFields(f as Record<string, unknown>);
+    const purchaseCurrency = inferPurchaseCurrencyFromBrand(
+      f["Shop"] != null ? String(f["Shop"]) : undefined
+    );
+
     const record: ProductRecord = {
       id: r.id,
       name: String(f["Product"] ?? ""),
@@ -273,7 +391,15 @@ async function fetchProductsFromTable(tableName: string): Promise<ProductRecord[
       orderByDate: null,
 
       qtyToOrder: 0,
+      qtyToOrderRaw: 0,
+      orderMoq,
+      orderPackSize,
+      pricePerUnit,
+      purchaseCurrency,
       excludeFromReorder,
+      airtableTable: tableName,
+      briefingSnoozeUntil,
+      briefingOrderedAt,
     };
 
     recomputeProductRunway(record);
@@ -313,7 +439,12 @@ export async function fetchProducts(): Promise<ProductRecord[]> {
 
   const coverBufferDays = coverBufferDaysFromEnv();
   for (const p of products) {
-    p.qtyToOrder = computeQtyToOrder(p, coverBufferDays);
+    p.qtyToOrderRaw = computeRawQtyToOrder(p, coverBufferDays);
+    p.qtyToOrder = applySupplierOrderConstraints(
+      p.qtyToOrderRaw,
+      p.orderMoq,
+      p.orderPackSize
+    );
   }
 
   return products;
@@ -378,6 +509,83 @@ export async function fetchDemandForYearMonth(year: number, month: number) {
   }
 
   return merged;
+}
+
+/**
+ * All years that have rows for this calendar month in monthly sales tables (both Opatra + PYT).
+ * Outer key = Year, inner = product name → units (merged across tables).
+ */
+export async function fetchDemandForMonthAllYears(month: number): Promise<
+  Map<number, Map<string, number>>
+> {
+  const tables = [AIRTABLE_MONTHLY_TABLE, AIRTABLE_PYT_MONTHLY_SALES_TABLE].filter(Boolean);
+  const byYear = new Map<number, Map<string, number>>();
+
+  function bump(year: number, productName: string, units: number) {
+    if (!Number.isFinite(year) || !Number.isFinite(units) || units <= 0) return;
+    const name = productName.trim();
+    if (!name) return;
+    let inner = byYear.get(year);
+    if (!inner) {
+      inner = new Map();
+      byYear.set(year, inner);
+    }
+    inner.set(name, (inner.get(name) ?? 0) + units);
+  }
+
+  for (const tableName of tables) {
+    let offset: string | undefined;
+
+    do {
+      const url = new URL(
+        `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(tableName)}`
+      );
+
+      url.searchParams.set("pageSize", "100");
+      url.searchParams.set("filterByFormula", `{Month}=${month}`);
+      if (offset) url.searchParams.set("offset", offset);
+
+      const res = await airtableFetchWithRetry(
+        url.toString(),
+        {
+          headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
+          next: { revalidate: 300 },
+        },
+        `monthly demand all years ${tableName} month=${month}`
+      );
+
+      const data = await res.json();
+      const records: AirtableRecord[] = data.records || [];
+
+      for (const r of records) {
+        const f = r.fields;
+        const yearRaw = Number(f["Year"]);
+        const monthRaw = Number(f["Month"]);
+        if (!Number.isFinite(yearRaw) || monthRaw !== month) continue;
+
+        const productFieldAny = f["Product"];
+        const productField = typeof productFieldAny === "string" ? productFieldAny : null;
+
+        const label = String(f["Record"] ?? "");
+        const parsed =
+          label.includes(" - ")
+            ? label.split(" - ").slice(1).join(" - ").trim()
+            : label.includes(" – ")
+              ? label.split(" – ").slice(1).join(" – ").trim()
+              : label;
+
+        const productName = (productField ?? parsed).trim();
+        if (!productName) continue;
+
+        const units = Number(f["Units Sold"] ?? 0);
+        bump(yearRaw, productName, units);
+      }
+
+      offset = data.offset;
+    } while (offset);
+  }
+
+  return byYear;
 }
 
 /** Per-product units sold in each month index 0 = January … 11 = December for the given year. */

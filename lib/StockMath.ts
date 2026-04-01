@@ -54,6 +54,21 @@ export function daysInYear(year: number): number {
   return feb29.getMonth() === 1 ? 366 : 365;
 }
 
+/**
+ * Days used to turn “units sold this calendar year” into an average daily rate.
+ * Past/future years: full year length. Current calendar year: days from 1 Jan through today (inclusive, local).
+ */
+export function demandDaysDenominatorForYear(year: number, now = new Date()): number {
+  const y = Math.floor(year);
+  const cy = now.getFullYear();
+  if (y !== cy) return daysInYear(y);
+
+  const start = new Date(y, 0, 1);
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  return Math.max(1, Math.min(days, daysInYear(y)));
+}
+
 /** Days in month (month is 1–12). */
 export function daysInMonth(year: number, month1to12: number): number {
   return new Date(year, month1to12, 0).getDate();

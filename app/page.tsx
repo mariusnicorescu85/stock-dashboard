@@ -1,6 +1,7 @@
 // app/page.tsx
 import React from "react";
 import Link from "next/link";
+import AirtableBriefingTools from "@/app/briefing/AirtableBriefingTools";
 import {
   fetchProducts,
   ProductRecord,
@@ -9,6 +10,7 @@ import {
   fetchDemandForYearMonth,
   fetchSalesTotalsAllTime,
 } from "@/lib/airtable";
+import { formatMoneyForBrandOptional } from "@/lib/money";
 import { partitionRunoutBuckets } from "@/lib/stockBriefing";
 
 export const dynamic = "force-dynamic";
@@ -256,10 +258,28 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
     <main className="min-h-screen text-slate-100">
       <div className="mx-auto max-w-[90rem] px-4 py-10 space-y-8">
         {/* Header */}
-        <header className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/80">Ops Control</p>
-          <h1 className="text-3xl font-semibold leading-tight">Stock Runway &amp; Reorder Dashboard</h1>
-          <p className="text-sm text-slate-400">Live Airtable-backed view to keep runway safe and reorders timely.</p>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+          <div className="space-y-2 min-w-0">
+            <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/80">Ops Control</p>
+            <h1 className="text-3xl font-semibold leading-tight">Stock Runway &amp; Reorder Dashboard</h1>
+            <p className="text-sm text-slate-400 max-w-2xl">
+              Live Airtable-backed view to keep runway safe and reorders timely.
+            </p>
+          </div>
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:justify-end sm:pt-1">
+            <Link
+              href="/briefing"
+              className="h-10 inline-flex items-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 text-sm font-medium text-emerald-200 hover:bg-emerald-500/15"
+            >
+              Stock briefing
+            </Link>
+            <Link
+              href="/buying-list"
+              className="h-10 inline-flex items-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 text-sm font-medium text-emerald-200 hover:bg-emerald-500/15"
+            >
+              Buying list
+            </Link>
+          </div>
         </header>
 
         {/* Detailed 60-day breakdown */}
@@ -316,6 +336,8 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
 
         {/* Controls */}
         <section className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] space-y-3">
+          <AirtableBriefingTools />
+
           {/* View switch */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="text-slate-400">View:</span>
@@ -391,10 +413,10 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
         Master Stock
       </Link>
       <Link
-        href="/briefing"
-        className="h-10 inline-flex items-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 text-sm text-emerald-200 hover:bg-emerald-500/15"
+        href="/diagnostics"
+        className="h-10 inline-flex items-center rounded-xl border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200 hover:bg-slate-900/60"
       >
-        Stock briefing
+        System health
       </Link>
     </div>
   </div>
@@ -636,6 +658,12 @@ function Table({ sorted, opatra, pyt, others, totalsMap }: any) {
             <th className="px-4 py-3 text-left">Run out</th>
             <th className="px-4 py-3 text-left">Order by</th>
             <th className="px-4 py-3 text-right min-w-[80px]">Qty</th>
+            <th className="px-4 py-3 text-right hidden 2xl:table-cell min-w-[72px]">
+              Unit
+            </th>
+            <th className="px-4 py-3 text-right hidden 2xl:table-cell min-w-[88px]">
+              Line
+            </th>
 
           </tr>
         </thead>
@@ -647,7 +675,7 @@ function Table({ sorted, opatra, pyt, others, totalsMap }: any) {
                 <React.Fragment key={section.label}>
                   <tr className="bg-slate-950/80 border-t border-slate-800/70">
                     <td
-                      colSpan={13}
+                      colSpan={14}
                       className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-300"
                     >
                       {section.label}
@@ -740,6 +768,17 @@ function Table({ sorted, opatra, pyt, others, totalsMap }: any) {
                         <td className="px-4 py-3 text-right text-emerald-200 font-bold tabular-nums min-w-[80px]">
                           {p.qtyToOrder}
                         </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-slate-300 hidden 2xl:table-cell">
+                          {formatMoneyForBrandOptional(p.brand, p.pricePerUnit)}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-slate-200 hidden 2xl:table-cell font-medium">
+                          {formatMoneyForBrandOptional(
+                            p.brand,
+                            p.pricePerUnit != null
+                              ? p.qtyToOrder * p.pricePerUnit
+                              : null
+                          )}
+                        </td>
 
                       </tr>
                     );
@@ -750,7 +789,7 @@ function Table({ sorted, opatra, pyt, others, totalsMap }: any) {
 
           {sorted.length === 0 && (
             <tr>
-              <td colSpan={13} className="px-4 py-6 text-center text-slate-400">
+              <td colSpan={14} className="px-4 py-6 text-center text-slate-400">
                 Nothing found for this view.
               </td>
             </tr>

@@ -3,6 +3,7 @@ import {
   authorizeCronRequest,
   loadStockDigestEmail,
 } from "@/app/api/cron/_shared";
+import { upsertBriefingBaselineFromBriefing } from "@/lib/briefingBaselineAirtable";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -13,7 +14,7 @@ export const maxDuration = 60;
  *
  * Query: full=1 — include full `briefing` object (larger payload).
  *
- * Env: CRON_SECRET, Airtable vars. No Resend keys required.
+ * Env: CRON_SECRET, Airtable vars.
  */
 export async function GET(req: Request) {
   if (!authorizeCronRequest(req)) {
@@ -26,8 +27,14 @@ export async function GET(req: Request) {
   const digest = await loadStockDigestEmail();
   const { briefing, ...rest } = digest;
 
+  const baselineUpsert = await upsertBriefingBaselineFromBriefing(briefing);
+
   const body: Record<string, unknown> = {
     ok: true,
+    baselineSnapshot: {
+      saved: baselineUpsert.saved,
+      ...(baselineUpsert.message ? { message: baselineUpsert.message } : {}),
+    },
     dateLabel: briefing.dateLabel,
     todayYmd: briefing.todayYmd,
     dashboardUrl: rest.dashboardUrl,

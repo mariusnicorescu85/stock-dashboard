@@ -5,16 +5,33 @@ import {
   fetchDemandBreakdownForYear,
   ProductRecord,
 } from "@/lib/airtable";
-import { computeStockDerived, fmtGB, daysInYear } from "@/lib/StockMath";
-import { monthlyForProduct } from "@/lib/categoryDemandDisplay";
+import {
+  computeStockDerived,
+  demandDaysDenominatorForYear,
+  fmtGB,
+} from "@/lib/StockMath";
+import {
+  comboDemandExtraMonthsByNormComponent,
+  monthlyRowMonths,
+  opatraIndividualsInCategory,
+  opatraProductsInSheetCategory,
+  roundDemandRate2,
+} from "@/lib/categoryDemandDisplay";
 import { monthlyHistoryYearsUpTo } from "@/lib/categoryYears";
 import CategoriesTabs, {
   type CategoryDemandBlock,
   type CategoryDemandRow,
   type YearSalesSlice,
 } from "./CategoriesTabs";
-import { parseShopFilter, type ShopFilter } from "@/lib/shopFilter";
+import { parseShopFilter, shopFilterLabel, type ShopFilter } from "@/lib/shopFilter";
+import {
+  buildCategoryDemandNarrationPayload,
+  categoryDemandWindowCaption,
+  fetchCategoryDemandNarrationOpenAI,
+  type CategoryDemandBlockForNarration,
+} from "@/lib/categoryDemandNarrationOpenAI";
 import CategoriesShopSelect from "./CategoriesShopSelect";
+import CategoryDemandNarrationCard from "./CategoryDemandNarrationCard";
 
 export const dynamic = "force-dynamic";
 
@@ -165,12 +182,20 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     breakdownByYear.set(y, await fetchDemandBreakdownForYear(y));
   }
 
+  const opatraComboExtraByYear = new Map<number, Map<string, number[]>>();
+  for (const y of histYears) {
+    opatraComboExtraByYear.set(
+      y,
+      comboDemandExtraMonthsByNormComponent(breakdownByYear.get(y)!)
+    );
+  }
+
+  const categoryDemandNow = new Date();
+  const primaryDemandDays = demandDaysDenominatorForYear(year, categoryDemandNow);
   const daysInYearByYear = histYears.map((y) => ({
     year: y,
-    days: daysInYear(y),
+    days: demandDaysDenominatorForYear(y, categoryDemandNow),
   }));
-
-  const daysInYearPrimary = daysInYear(year);
 
   function productsInCategory(catId: string): ProductRecord[] {
     const catLower = catId.toLowerCase();
@@ -195,72 +220,65 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     );
   }
 
-  function isOpatraBrand(p: ProductRecord): boolean {
-    return (p.brand ?? "").toLowerCase().includes("opatra");
-  }
-
-  /** Category from Airtable for Opatra (Products table). */
-  function opatraDemandGroupLabel(p: ProductRecord): string | null {
-    if (!isOpatraBrand(p)) return null;
-    const c = (p.category ?? "").trim();
-    return c || null;
-  }
-
-  function opatraProductsForBlockLabel(blockLabel: string): ProductRecord[] {
-    const want = blockLabel.trim().toLowerCase();
-    return products.filter((p) => {
-      const g = opatraDemandGroupLabel(p);
-      return g != null && g.trim().toLowerCase() === want;
-    });
-  }
-
-  function rowForProduct(product: ProductRecord): CategoryDemandRow {
-    const byYear: YearSalesSlice[] = histYears.map((y) => {
-      const bd = breakdownByYear.get(y)!;
-      const months = monthlyForProduct(bd, product.name);
-      const totalUnits = months.reduce((sum, u) => sum + u, 0);
-      return { year: y, totalUnits, months };
-    });
-
-    const primarySlice = byYear.find((s) => s.year === year)!;
-    const unitsYear = primarySlice.totalUnits;
-
-    let displayRunOut: string | null = product.runOutDate;
-    let displayOrderBy: string | null = product.orderByDate;
-
-    const yearlyDaily =
-      unitsYear > 0 ? unitsYear / daysInYearPrimary : 0;
-
-    if ((!displayRunOut || !displayOrderBy) && yearlyDaily > 0) {
-      const derived = computeStockDerived({
-        currentStock: product.currentStock,
-        incomingStock: product.incomingStockTotal,
-        dailyDemand: yearlyDaily,
-        leadTimeDays: product.leadTimeDays ?? 0,
+  function makeRowForProduct(
+    comboExtraByYear?: Map<number, Map<string, number[]>>
+  ): (product: ProductRecord) => CategoryDemandRow {
+    return (product: ProductRecord) => {
+      const byYear: YearSalesSlice[] = histYears.map((y) => {
+        const bd = breakdownByYear.get(y)!;
+        const extra = comboExtraByYear?.get(y) ?? null;
+        const months = monthlyRowMonths(bd, product.name, extra);
+        const totalUnits = months.reduce((sum, u) => sum + u, 0);
+        return { year: y, totalUnits, months };
       });
 
-      displayRunOut = fmtGB(derived.runOutDate);
-      displayOrderBy = fmtGB(derived.orderByDate);
-    } else {
-      displayRunOut = product.runOutDate
-        ? fmtGB(new Date(product.runOutDate))
-        : null;
-      displayOrderBy = product.orderByDate
-        ? fmtGB(new Date(product.orderByDate))
-        : null;
-    }
+      const primarySlice = byYear.find((s) => s.year === year)!;
+      const unitsYear = primarySlice.totalUnits;
 
-    return {
-      id: product.id,
-      name: product.name,
-      brand: product.brand,
-      byYear,
-      sheetDaily: product.dailyDemand ?? 0,
-      currentStock: product.currentStock,
-      incomingStockTotal: product.incomingStockTotal,
-      runOut: displayRunOut,
-      orderBy: displayOrderBy,
-      qtyToOrder: product.qtyToOrder,
+      const salesImpliedDaily =
+        unitsYear > 0 && primaryDemandDays > 0
+          ? unitsYear / primaryDemandDays
+          : 0;
+      const sheetDailyVal = product.dailyDemand ?? 0;
+      const dailyForRunway =
+        sheetDailyVal > 0 && salesImpliedDaily > 0
+          ? Math.max(sheetDailyVal, salesImpliedDaily)
+          : sheetDailyVal > 0
+            ? sheetDailyVal
+            : salesImpliedDaily;
+
+      let displayRunOut: string | null = null;
+      let displayOrderBy: string | null = null;
+      if (dailyForRunway > 0) {
+        const derived = computeStockDerived({
+          currentStock: product.currentStock,
+          incomingStock: product.incomingStockTotal,
+          dailyDemand: dailyForRunway,
+          leadTimeDays: product.leadTimeDays ?? 0,
+        });
+        displayRunOut = fmtGB(derived.runOutDate);
+        displayOrderBy = fmtGB(derived.orderByDate);
+      } else {
+        displayRunOut = product.runOutDate
+          ? fmtGB(new Date(product.runOutDate))
+          : null;
+        displayOrderBy = product.orderByDate
+          ? fmtGB(new Date(product.orderByDate))
+          : null;
+      }
+
+      return {
+        id: product.id,
+        name: product.name,
+        brand: product.brand,
+        byYear,
+        sheetDaily: product.dailyDemand ?? 0,
+        currentStock: product.currentStock,
+        incomingStockTotal: product.incomingStockTotal,
+        runOut: displayRunOut,
+        orderBy: displayOrderBy,
+        qtyToOrder: product.qtyToOrder,
+      };
     };
   }
 
@@ -269,29 +287,31 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     label: string,
     description: string,
     items: ProductRecord[],
-    opts?: { hideStockRunoutColumns?: boolean }
+    opts?: {
+      hideStockRunoutColumns?: boolean;
+      opatraComboExtraByYear?: Map<number, Map<string, number[]>>;
+    }
   ): CategoryDemandBlock | null {
     if (items.length === 0) return null;
 
+    const rowForProduct = makeRowForProduct(opts?.opatraComboExtraByYear);
     const rows = items.map(rowForProduct);
 
-    const totalsByYear = histYears.map((y) => {
-      const bd = breakdownByYear.get(y)!;
-      const total = items.reduce((sum, p) => {
-        const m = monthlyForProduct(bd, p.name);
-        return sum + m.reduce((a, b) => a + b, 0);
-      }, 0);
-      return { year: y, total };
-    });
+    const totalsByYear = histYears.map((y) => ({
+      year: y,
+      total: rows.reduce(
+        (s, r) => s + (r.byYear.find((x) => x.year === y)?.totalUnits ?? 0),
+        0
+      ),
+    }));
 
     const totalCurrentStock = items.reduce((sum, p) => sum + p.currentStock, 0);
     const totalIncomingStock = items.reduce(
       (sum, p) => sum + p.incomingStockTotal,
       0
     );
-    const totalDailyDemand = items.reduce(
-      (sum, p) => sum + (p.dailyDemand ?? 0),
-      0
+    const totalDailyDemand = roundDemandRate2(
+      items.reduce((sum, p) => sum + (p.dailyDemand ?? 0), 0)
     );
     const avgLeadTime =
       items.length > 0
@@ -332,15 +352,15 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
   }
 
   for (const cat of OPATRA_CATEGORY_BLOCKS) {
-    const b = demandBlockForItems(
-      cat.id,
-      cat.label,
-      cat.description,
-      opatraProductsForBlockLabel(cat.label),
-      cat.hideStockRunoutColumns
-        ? { hideStockRunoutColumns: true }
-        : undefined
-    );
+    const items =
+      cat.id === "opatra-combo"
+        ? opatraProductsInSheetCategory(cat.label, products)
+        : opatraIndividualsInCategory(cat.label, products);
+    const b = demandBlockForItems(cat.id, cat.label, cat.description, items, {
+      hideStockRunoutColumns: cat.hideStockRunoutColumns,
+      opatraComboExtraByYear:
+        cat.id === "opatra-combo" ? undefined : opatraComboExtraByYear,
+    });
     if (b) blocks.push(b);
   }
 
@@ -350,6 +370,43 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
       : shop === "pyt"
         ? blocks.filter((b) => !b.id.startsWith("opatra-"))
         : blocks.filter((b) => b.id.startsWith("opatra-"));
+
+  const blocksForNarration: CategoryDemandBlockForNarration[] = filteredBlocks.map((b) => ({
+    id: b.id,
+    label: b.label,
+    description: b.description,
+    totalsByYear: b.totalsByYear,
+    totalCurrentStock: b.totalCurrentStock,
+    totalDailyDemand: b.totalDailyDemand,
+    hideStockRunoutColumns: b.hideStockRunoutColumns,
+    items: b.items.map((r) => ({
+      name: r.name,
+      qtyToOrder: r.qtyToOrder,
+      byYear: r.byYear.map((s) => ({
+        year: s.year,
+        totalUnits: s.totalUnits,
+        months: [...s.months],
+      })),
+    })),
+  }));
+
+  const categoryNarrationPayload =
+    filteredBlocks.length > 0
+      ? buildCategoryDemandNarrationPayload({
+          primaryYear: year,
+          historyYearsAsc: histYears,
+          shopScopeLabel: shopFilterLabel(shop),
+          blocks: blocksForNarration,
+        })
+      : null;
+
+  const categoryNarration = categoryNarrationPayload
+    ? await fetchCategoryDemandNarrationOpenAI(categoryNarrationPayload)
+    : null;
+
+  const categoryNarrationCaption = categoryNarrationPayload
+    ? categoryDemandWindowCaption(categoryNarrationPayload.demandWindow)
+    : null;
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
@@ -406,6 +463,13 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
             </div>
           </div>
         </section>
+
+        {categoryNarration ? (
+          <CategoryDemandNarrationCard
+            narration={categoryNarration}
+            caption={categoryNarrationCaption}
+          />
+        ) : null}
 
         {filteredBlocks.length === 0 ? (
           <p className="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-6 text-sm text-slate-400">
