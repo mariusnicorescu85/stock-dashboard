@@ -136,6 +136,9 @@ export async function runDiagnostics(): Promise<DiagnosticsReport> {
   // --- Optional: OpenAI ---
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   if (!openaiKey) {
+    const vercelHint = process.env.VERCEL
+      ? ` Vercel: enable OPENAI_API_KEY for the environment of this URL (Production vs Preview vs Development), then redeploy — new vars are not picked up until a deployment runs with them.`
+      : "";
     push(
       checks,
       "openai",
@@ -143,7 +146,7 @@ export async function runDiagnostics(): Promise<DiagnosticsReport> {
       "OpenAI (briefing / narration)",
       "Optional: OPENAI_API_KEY enables AI narration features.",
       "warn",
-      "Not set — briefing narration will not call OpenAI."
+      `Not set — briefing narration will not call OpenAI.${vercelHint}`
     );
   } else {
     push(
@@ -153,7 +156,9 @@ export async function runDiagnostics(): Promise<DiagnosticsReport> {
       "OpenAI (briefing / narration)",
       "Optional: OPENAI_API_KEY enables AI narration features.",
       "ok",
-      "Present."
+      process.env.VERCEL && process.env.VERCEL_ENV
+        ? `Present (Vercel: ${process.env.VERCEL_ENV}).`
+        : "Present."
     );
   }
 
