@@ -327,7 +327,7 @@ export async function buildOrderWorkflowCsvForRecord(
         String(qty),
         unitCost > 0 ? String(unitCost) : "",
         lineTotal > 0 ? String(lineTotal) : "",
-        "", // order total filled after sum
+        "", // order total lives on the final **ORDER TOTAL** row only
         currency,
         store,
         orderReference,
@@ -337,13 +337,26 @@ export async function buildOrderWorkflowCsvForRecord(
 
     orderTotal = Math.round(orderTotal * 100) / 100;
     const orderTotalStr = String(orderTotal);
-    for (const row of bodyRows) {
-      row[7] = orderTotalStr;
-    }
+
+    const totalsRow: string[] = [
+      "",
+      "",
+      "",
+      "ORDER TOTAL",
+      "",
+      "",
+      "",
+      orderTotalStr,
+      currency,
+      store,
+      orderReference,
+      "",
+    ];
 
     const lines: string[] = [
       ORDER_WORKFLOW_CSV_HEADERS.map(csvEscape).join(","),
       ...bodyRows.map((cells) => cells.map(csvEscape).join(",")),
+      totalsRow.map(csvEscape).join(","),
     ];
     const csv = lines.join("\r\n");
 
