@@ -15,6 +15,8 @@ import {
 export type ProductRecord = {
   id: string;
   name: string;
+  /** From Airtable "SKU/Product code" (optional). */
+  sku?: string | null;
   brand?: string;
   productType?: string;
   category?: string;
@@ -368,9 +370,14 @@ async function fetchProductsFromTable(
       f["Shop"] != null ? String(f["Shop"]) : undefined
     );
 
+    const skuRaw = f["SKU/Product code"] ?? f["SKU"] ?? f["Product code"];
+    const sku =
+      skuRaw != null && String(skuRaw).trim() !== "" ? String(skuRaw).trim() : null;
+
     const record: ProductRecord = {
       id: r.id,
       name: String(f["Product"] ?? ""),
+      sku,
       brand: f["Shop"],
       productType: f["Product Type"],
       category: f["Category"],

@@ -242,6 +242,30 @@ export async function runDiagnostics(): Promise<DiagnosticsReport> {
     );
   }
 
+  const orderWf = process.env.AIRTABLE_ORDER_WORKFLOWS_TABLE?.trim();
+  const orderLn = process.env.AIRTABLE_ORDER_LINES_TABLE?.trim();
+  if (!orderWf || !orderLn) {
+    push(
+      checks,
+      "order-workflow-sync",
+      nextOrder(),
+      "Order workflow sync (Airtable)",
+      "AIRTABLE_ORDER_WORKFLOWS_TABLE + AIRTABLE_ORDER_LINES_TABLE enable POST /api/cron/sync-order-workflows.",
+      "warn",
+      "Not set — sync endpoint returns disabled until both table names are configured."
+    );
+  } else {
+    push(
+      checks,
+      "order-workflow-sync",
+      nextOrder(),
+      "Order workflow sync (Airtable)",
+      "AIRTABLE_ORDER_WORKFLOWS_TABLE + AIRTABLE_ORDER_LINES_TABLE enable POST /api/cron/sync-order-workflows.",
+      "ok",
+      `Tables: ${orderWf}, ${orderLn}.`
+    );
+  }
+
   checks.sort((a, b) => a.order - b.order);
 
   const finished = Date.now();
