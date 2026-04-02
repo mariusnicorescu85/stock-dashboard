@@ -252,17 +252,24 @@ export async function buildOrderWorkflowCsvForRecord(
   const wft = wfTable();
   const lnt = lnTable();
 
-  const missing: string[] = [];
-  if (!AIRTABLE_API_KEY?.trim()) missing.push("AIRTABLE_API_KEY");
-  if (!AIRTABLE_BASE_ID?.trim()) missing.push("AIRTABLE_BASE_ID");
-  if (!wft) missing.push("AIRTABLE_ORDER_WORKFLOWS_TABLE");
-  if (!lnt) missing.push("AIRTABLE_ORDER_LINES_TABLE");
-  if (missing.length > 0) {
+  if (
+    !AIRTABLE_API_KEY?.trim() ||
+    !AIRTABLE_BASE_ID?.trim() ||
+    !wft ||
+    !lnt
+  ) {
+    const missing: string[] = [];
+    if (!AIRTABLE_API_KEY?.trim()) missing.push("AIRTABLE_API_KEY");
+    if (!AIRTABLE_BASE_ID?.trim()) missing.push("AIRTABLE_BASE_ID");
+    if (!wft) missing.push("AIRTABLE_ORDER_WORKFLOWS_TABLE");
+    if (!lnt) missing.push("AIRTABLE_ORDER_LINES_TABLE");
     return {
       ok: false,
       error: `Server env not configured for order CSV: ${missing.join(", ")}. Add them in Vercel → Settings → Environment Variables and redeploy.`,
     };
   }
+
+  const workflowsTable = wft;
 
   const id = workflowRecordId.trim();
   if (!isLikelyAirtableRecordId(id)) {
@@ -270,7 +277,7 @@ export async function buildOrderWorkflowCsvForRecord(
   }
 
   try {
-    const { fields: wf } = await airtableGetRecord(wft, id);
+    const { fields: wf } = await airtableGetRecord(workflowsTable, id);
     if (!wf) {
       return { ok: false, error: "Workflow record not found or empty." };
     }
