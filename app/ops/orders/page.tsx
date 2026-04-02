@@ -47,8 +47,9 @@ export default async function OrderProgressPage() {
             <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/80">Ops Control</p>
             <h1 className="text-3xl font-semibold leading-tight">Order progress</h1>
             <p className="text-sm text-slate-400 max-w-2xl">
-              Supplier order workflows from Airtable—newest activity first. For teams without Airtable
-              access; data is read-only here.
+              Supplier order workflows from Airtable, sorted by the latest of email sent / generated /
+              trigger / ETA date (or the date in the order reference). For teams without Airtable access;
+              read-only here.
             </p>
             <p className="text-xs text-slate-500">{dateLabel}</p>
           </div>
@@ -155,8 +156,7 @@ export default async function OrderProgressPage() {
 
         {rows.length > 0 && (
           <p className="text-xs text-slate-500">
-            Showing up to {rows.length} workflows (latest changes first). Full detail and edits stay in
-            Airtable or your n8n tools.
+            Showing up to {rows.length} workflows. Full detail and edits stay in Airtable or your n8n tools.
           </p>
         )}
       </div>

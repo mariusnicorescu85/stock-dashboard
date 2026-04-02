@@ -19,6 +19,7 @@ export type OrderWorkflowProgressRow = {
   expectedDelivery: string | null;
   shipmentStatus: string | null;
   triggerDate: string | null;
+  generatedDate: string | null;
   owner: string | null;
 };
 
@@ -70,8 +71,28 @@ function mapRecord(r: { id: string; fields?: Record<string, unknown> }): OrderWo
     expectedDelivery: pickStr(fields, "Expected delivery date", "Expected Delivery Date"),
     shipmentStatus: pickStr(fields, "Shipment status", "Shipment Status"),
     triggerDate: pickStr(fields, "Stock-risk trigger date", "Stock risk trigger date"),
+    generatedDate: pickStr(fields, "Generated date", "Generated Date"),
     owner: pickOwner(fields, "Assigned owner", "Assigned Owner"),
   };
+}
+
+/** Best-effort “recency” for sorting when Airtable has no API-sortable modified time field. */
+function rowRecencyMs(r: OrderWorkflowProgressRow): number {
+  const dates = [r.emailSentAt, r.generatedDate, r.triggerDate, r.expectedDelivery];
+  let best = 0;
+  for (const d of dates) {
+    if (!d) continue;
+    const t = Date.parse(d);
+    if (!Number.isNaN(t)) best = Math.max(best, t);
+  }
+  if (best > 0) return best;
+  const ref = r.orderReference ?? "";
+  const m = ref.match(/(\d{4}-\d{2}-\d{2})/);
+  if (m) {
+    const t = Date.parse(m[1]!);
+    if (!Number.isNaN(t)) return t;
+  }
+  return 0;
 }
 
 export type FetchOrderWorkflowProgressResult = {
@@ -81,7 +102,9 @@ export type FetchOrderWorkflowProgressResult = {
 };
 
 /**
- * Newest first by Airtable **Last Modified Time** (up to {@link maxRecords}).
+ * Fetches up to {@link maxRecords} workflow rows (paged), then sorts **newest first** in-app using
+ * email sent time, generated date, trigger date, ETA, or a date embedded in the order reference.
+ * (Airtable’s “Last modified” system field is not always a valid API `sort` field name.)
  */
 export async function fetchOrderWorkflowProgressRows(
   maxRecords = 200
@@ -116,8 +139,6 @@ export async function fetchOrderWorkflowProgressRows(
       );
       const page = Math.min(100, cap - out.length);
       url.searchParams.set("pageSize", String(page));
-      url.searchParams.set("sort[0][field]", "Last Modified Time");
-      url.searchParams.set("sort[0][direction]", "desc");
       if (offset) url.searchParams.set("offset", offset);
 
       const res = await fetch(url.toString(), {
@@ -146,6 +167,8 @@ export async function fetchOrderWorkflowProgressRows(
       offset = data.offset;
       if (!offset || !data.records?.length) break;
     }
+
+    out.sort((a, b) => rowRecencyMs(b) - rowRecencyMs(a));
 
     return { rows: out, disabledReason: null, error: null };
   } catch (e) {
