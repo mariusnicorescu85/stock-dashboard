@@ -279,6 +279,12 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
             >
               Buying list
             </Link>
+            <Link
+              href="/ops/orders"
+              className="h-10 inline-flex items-center rounded-xl border border-slate-600 bg-slate-900/60 px-4 text-sm font-medium text-slate-200 hover:bg-slate-800/80"
+            >
+              Order progress
+            </Link>
           </div>
         </header>
 

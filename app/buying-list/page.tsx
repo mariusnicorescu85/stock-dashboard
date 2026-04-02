@@ -80,6 +80,12 @@ export default async function BuyingListPage({
             >
               Full dashboard
             </Link>
+            <Link
+              href="/ops/orders"
+              className="h-10 inline-flex items-center rounded-xl border border-slate-600 bg-slate-900/60 px-3 text-sm text-slate-200 hover:bg-slate-800/80"
+            >
+              Order progress
+            </Link>
           </div>
         </header>
 
