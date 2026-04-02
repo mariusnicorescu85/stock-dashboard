@@ -47,6 +47,13 @@ function fLineTotal() {
   return process.env.AIRTABLE_ORDER_LINES_LINE_TOTAL_FIELD?.trim() || "Line total";
 }
 
+/** Inverse link on the **workflow** row: array of linked Order line record ids. */
+function fWorkflowOrderLinesInverse() {
+  return (
+    process.env.AIRTABLE_ORDER_WORKFLOW_ORDER_LINES_FIELD?.trim() || "Order lines"
+  );
+}
+
 function csvEscape(value: string) {
   if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
   return value;
@@ -119,6 +126,19 @@ export function isLikelyAirtableRecordId(id: string): boolean {
   return /^rec[a-zA-Z0-9]{14,}$/.test(id.trim());
 }
 
+function extractLinkedRecordIds(value: unknown): string[] {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    return value.filter(
+      (v): v is string => typeof v === "string" && /^rec[a-zA-Z0-9]{14,}$/.test(v)
+    );
+  }
+  if (typeof value === "string" && /^rec[a-zA-Z0-9]{14,}$/.test(value)) {
+    return [value];
+  }
+  return [];
+}
+
 async function airtableGetRecord(table: string, recordId: string) {
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(
     table
@@ -134,12 +154,37 @@ async function airtableGetRecord(table: string, recordId: string) {
   return (await res.json()) as { fields?: Record<string, unknown> };
 }
 
-async function fetchOrderLinesForWorkflow(
+async function fetchOrderLineRecordsByIds(
+  lineIds: string[]
+): Promise<Array<{ id: string; fields: Record<string, unknown> }>> {
+  const table = lnTable()!;
+  const out: Array<{ id: string; fields: Record<string, unknown> }> = [];
+
+  for (const lineId of lineIds) {
+    try {
+      const r = await airtableGetRecord(table, lineId);
+      out.push({ id: lineId, fields: r.fields ?? {} });
+    } catch {
+      /* stale link */
+    }
+    await sleep(75);
+  }
+
+  return out;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Fallback: list lines where the link field points at this workflow (Airtable behavior varies by base). */
+async function fetchOrderLinesForWorkflowByLinkFilter(
   workflowRecordId: string
 ): Promise<Array<{ id: string; fields: Record<string, unknown> }>> {
   const table = lnTable()!;
   const linkField = fLineLink();
-  const formula = `{${linkField}}='${workflowRecordId.replace(/'/g, "\\'")}'`;
+  const rid = workflowRecordId.replace(/'/g, "\\'");
+  const formula = `{${linkField}}='${rid}'`;
 
   const out: Array<{ id: string; fields: Record<string, unknown> }> = [];
   let offset: string | undefined;
@@ -176,6 +221,20 @@ async function fetchOrderLinesForWorkflow(
   return out;
 }
 
+async function fetchOrderLinesForWorkflow(
+  workflowRecordId: string,
+  workflowFields: Record<string, unknown>
+): Promise<Array<{ id: string; fields: Record<string, unknown> }>> {
+  const inverseField = fWorkflowOrderLinesInverse();
+  const fromInverse = extractLinkedRecordIds(workflowFields[inverseField]);
+
+  if (fromInverse.length > 0) {
+    return fetchOrderLineRecordsByIds(fromInverse);
+  }
+
+  return fetchOrderLinesForWorkflowByLinkFilter(workflowRecordId);
+}
+
 function lineComputedTotal(fields: Record<string, unknown>): number {
   const lt = numField(fields, fLineTotal(), "Line total");
   if (lt > 0) return Math.round(lt * 100) / 100;
@@ -193,11 +252,15 @@ export async function buildOrderWorkflowCsvForRecord(
   const wft = wfTable();
   const lnt = lnTable();
 
-  if (!wft || !lnt || !AIRTABLE_API_KEY?.trim() || !AIRTABLE_BASE_ID?.trim()) {
+  const missing: string[] = [];
+  if (!AIRTABLE_API_KEY?.trim()) missing.push("AIRTABLE_API_KEY");
+  if (!AIRTABLE_BASE_ID?.trim()) missing.push("AIRTABLE_BASE_ID");
+  if (!wft) missing.push("AIRTABLE_ORDER_WORKFLOWS_TABLE");
+  if (!lnt) missing.push("AIRTABLE_ORDER_LINES_TABLE");
+  if (missing.length > 0) {
     return {
       ok: false,
-      error:
-        "Missing AIRTABLE_ORDER_WORKFLOWS_TABLE / AIRTABLE_ORDER_LINES_TABLE or Airtable credentials.",
+      error: `Server env not configured for order CSV: ${missing.join(", ")}. Add them in Vercel → Settings → Environment Variables and redeploy.`,
     };
   }
 
@@ -222,9 +285,15 @@ export async function buildOrderWorkflowCsvForRecord(
     const store = strField(wf, fStore(), "Store");
     const currency = strField(wf, fCurrency(), "Currency");
 
-    const lineRows = await fetchOrderLinesForWorkflow(id);
+    const lineRows = await fetchOrderLinesForWorkflow(id, wf);
     if (lineRows.length === 0) {
-      return { ok: false, error: "No order lines linked to this workflow." };
+      return {
+        ok: false,
+        error:
+          "No order lines linked to this workflow. In Airtable, check the line rows link to this workflow " +
+          `(field “${fLineLink()}”) and/or that the workflow has linked lines in “${fWorkflowOrderLinesInverse()}”. ` +
+          `If your link field names differ, set env AIRTABLE_ORDER_LINES_WORKFLOW_LINK_FIELD and/or AIRTABLE_ORDER_WORKFLOW_ORDER_LINES_FIELD.`,
+      };
     }
 
     const generatedAtIso = new Date().toISOString();
