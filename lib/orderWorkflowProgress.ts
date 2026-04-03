@@ -9,6 +9,7 @@ export type OrderWorkflowProgressRow = {
   id: string;
   orderReference: string | null;
   status: string | null;
+  severity: string | null;
   supplierName: string | null;
   store: string | null;
   currency: string | null;
@@ -20,6 +21,7 @@ export type OrderWorkflowProgressRow = {
   shipmentStatus: string | null;
   triggerDate: string | null;
   generatedDate: string | null;
+  submissionDeadline: string | null;
   owner: string | null;
 };
 
@@ -56,11 +58,15 @@ function linkLength(f: Record<string, unknown>, ...keys: string[]): number | nul
 
 function mapRecord(r: { id: string; fields?: Record<string, unknown> }): OrderWorkflowProgressRow {
   const fields = r.fields ?? {};
+  const severityField = process.env.AIRTABLE_ORDER_FIELD_SEVERITY?.trim() || "Severity";
+  const deadlineField =
+    process.env.AIRTABLE_ORDER_FIELD_SUBMISSION_DEADLINE?.trim() || "Submission deadline";
 
   return {
     id: r.id,
     orderReference: pickStr(fields, "Order reference"),
     status: pickStr(fields, "Status"),
+    severity: pickStr(fields, severityField, "Severity"),
     supplierName: pickStr(fields, "Supplier name"),
     store: pickStr(fields, "Store"),
     currency: pickStr(fields, "Currency"),
@@ -72,13 +78,20 @@ function mapRecord(r: { id: string; fields?: Record<string, unknown> }): OrderWo
     shipmentStatus: pickStr(fields, "Shipment status", "Shipment Status"),
     triggerDate: pickStr(fields, "Stock-risk trigger date", "Stock risk trigger date"),
     generatedDate: pickStr(fields, "Generated date", "Generated Date"),
+    submissionDeadline: pickStr(fields, deadlineField, "Submission deadline", "Submission Deadline"),
     owner: pickOwner(fields, "Assigned owner", "Assigned Owner"),
   };
 }
 
 /** Best-effort “recency” for sorting when Airtable has no API-sortable modified time field. */
 function rowRecencyMs(r: OrderWorkflowProgressRow): number {
-  const dates = [r.emailSentAt, r.generatedDate, r.triggerDate, r.expectedDelivery];
+  const dates = [
+    r.emailSentAt,
+    r.generatedDate,
+    r.triggerDate,
+    r.expectedDelivery,
+    r.submissionDeadline,
+  ];
   let best = 0;
   for (const d of dates) {
     if (!d) continue;
@@ -101,35 +114,40 @@ export type FetchOrderWorkflowProgressResult = {
   error: string | null;
 };
 
+export type FetchOrderWorkflowRawResult =
+  | {
+      ok: true;
+      records: Array<{ id: string; fields: Record<string, unknown> }>;
+    }
+  | { ok: false; error: string; disabledReason: string | null };
+
 /**
- * Fetches up to {@link maxRecords} workflow rows (paged), then sorts **newest first** in-app using
- * email sent time, generated date, trigger date, ETA, or a date embedded in the order reference.
- * (Airtable’s “Last modified” system field is not always a valid API `sort` field name.)
+ * Paged fetch of workflow rows (raw Airtable fields) for automation / reminders.
  */
-export async function fetchOrderWorkflowProgressRows(
-  maxRecords = 200
-): Promise<FetchOrderWorkflowProgressResult> {
+export async function fetchOrderWorkflowRawRecords(
+  maxRecords = 500
+): Promise<FetchOrderWorkflowRawResult> {
   const table = process.env.AIRTABLE_ORDER_WORKFLOWS_TABLE?.trim();
 
   if (!table) {
     return {
-      rows: [],
+      ok: false,
       disabledReason:
         "Set AIRTABLE_ORDER_WORKFLOWS_TABLE in the environment to show order progress here.",
-      error: null,
+      error: "Missing AIRTABLE_ORDER_WORKFLOWS_TABLE",
     };
   }
 
   if (!AIRTABLE_API_KEY?.trim() || !AIRTABLE_BASE_ID?.trim()) {
     return {
-      rows: [],
+      ok: false,
       disabledReason: null,
       error: "Airtable credentials are not configured.",
     };
   }
 
   const cap = Math.min(500, Math.max(1, maxRecords));
-  const out: OrderWorkflowProgressRow[] = [];
+  const out: Array<{ id: string; fields: Record<string, unknown> }> = [];
   let offset: string | undefined;
 
   try {
@@ -149,7 +167,7 @@ export async function fetchOrderWorkflowProgressRows(
       if (!res.ok) {
         const text = await res.text();
         return {
-          rows: [],
+          ok: false,
           disabledReason: null,
           error: `Airtable error (${res.status}): ${text.slice(0, 300)}`,
         };
@@ -161,18 +179,39 @@ export async function fetchOrderWorkflowProgressRows(
       };
 
       for (const rec of data.records ?? []) {
-        out.push(mapRecord(rec));
+        out.push({ id: rec.id, fields: rec.fields ?? {} });
       }
 
       offset = data.offset;
       if (!offset || !data.records?.length) break;
     }
 
-    out.sort((a, b) => rowRecencyMs(b) - rowRecencyMs(a));
-
-    return { rows: out, disabledReason: null, error: null };
+    return { ok: true, records: out };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    return { rows: [], disabledReason: null, error: message };
+    return { ok: false, disabledReason: null, error: message };
   }
+}
+
+/**
+ * Fetches up to {@link maxRecords} workflow rows (paged), then sorts **newest first** in-app using
+ * email sent time, generated date, trigger date, ETA, or a date embedded in the order reference.
+ * (Airtable’s “Last modified” system field is not always a valid API `sort` field name.)
+ */
+export async function fetchOrderWorkflowProgressRows(
+  maxRecords = 200
+): Promise<FetchOrderWorkflowProgressResult> {
+  const raw = await fetchOrderWorkflowRawRecords(maxRecords);
+
+  if (!raw.ok) {
+    if (raw.disabledReason) {
+      return { rows: [], disabledReason: raw.disabledReason, error: null };
+    }
+    return { rows: [], disabledReason: null, error: raw.error };
+  }
+
+  const out = raw.records.map((rec) => mapRecord(rec));
+  out.sort((a, b) => rowRecencyMs(b) - rowRecencyMs(a));
+
+  return { rows: out, disabledReason: null, error: null };
 }

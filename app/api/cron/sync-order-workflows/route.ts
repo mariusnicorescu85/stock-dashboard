@@ -14,7 +14,13 @@ export const maxDuration = 120;
  * - Query: `dryRun=1` — report what would be created without writing
  *
  * Env: `AIRTABLE_ORDER_WORKFLOWS_TABLE`, `AIRTABLE_ORDER_LINES_TABLE` (and standard Airtable vars).
- * Optional: `OPS_ORDER_WORKFLOW_STATUS_DRAFT`, `OPS_ORDER_WORKFLOW_STATUS_CLOSED`, field name overrides `AIRTABLE_ORDER_FIELD_*`, etc. — see `lib/orderWorkflowAirtable.ts`.
+ * PDF-aligned defaults (see `lib/orderWorkflowAirtable.ts`): new drafts get **Severity** (Critical/High/Medium),
+ * **Submission deadline** (today + `OPS_ORDER_SUBMISSION_DEADLINE_DAYS`, default 3), and **Assigned owner** when
+ * `OPS_ORDER_DEFAULT_OWNER_EMAIL` is set. Field names default to `Severity`, `Submission deadline`, `Assigned owner`
+ * (override with `AIRTABLE_ORDER_FIELD_*`). Set `OPS_ORDER_DISABLE_SEVERITY=1` or `OPS_ORDER_DISABLE_SUBMISSION_DEADLINE=1`
+ * if those Airtable fields are not created yet.
+ *
+ * Also: `OPS_ORDER_WORKFLOW_STATUS_DRAFT`, `OPS_ORDER_WORKFLOW_STATUS_CLOSED`, other `AIRTABLE_ORDER_FIELD_*`.
  */
 export async function GET(req: Request) {
   return handle(req);

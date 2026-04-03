@@ -266,6 +266,52 @@ export async function runDiagnostics(): Promise<DiagnosticsReport> {
     );
   }
 
+  const opsUser = process.env.OPS_BASIC_AUTH_USER?.trim();
+  const opsPass = process.env.OPS_BASIC_AUTH_PASSWORD?.trim();
+  if (opsUser && opsPass) {
+    push(
+      checks,
+      "ops-basic-auth",
+      nextOrder(),
+      "Ops pages Basic Auth",
+      "OPS_BASIC_AUTH_USER + OPS_BASIC_AUTH_PASSWORD protect /ops/* in middleware.",
+      "ok",
+      "Both set — /ops routes require Basic authentication."
+    );
+  } else if (opsUser || opsPass) {
+    push(
+      checks,
+      "ops-basic-auth",
+      nextOrder(),
+      "Ops pages Basic Auth",
+      "Set both OPS_BASIC_AUTH_USER and OPS_BASIC_AUTH_PASSWORD to enable /ops protection.",
+      "warn",
+      "Only one of the two is set — middleware will not enforce auth until both are set."
+    );
+  } else {
+    push(
+      checks,
+      "ops-basic-auth",
+      nextOrder(),
+      "Ops pages Basic Auth",
+      "Optional: OPS_BASIC_AUTH_USER + OPS_BASIC_AUTH_PASSWORD protect /ops/*.",
+      "warn",
+      "Not set — /ops is public (same as the rest of the site)."
+    );
+  }
+
+  if (orderWf) {
+    push(
+      checks,
+      "order-workflow-reminders",
+      nextOrder(),
+      "Order workflow reminders API",
+      "GET /api/cron/order-workflow-reminders (Bearer CRON_SECRET) lists T+1 / upload / deadline candidates for n8n.",
+      "ok",
+      "Use n8n/nuvaleo-daily-reminders.json + docs/nuvaleo-full-automation.md for full PDF loop."
+    );
+  }
+
   checks.sort((a, b) => a.order - b.order);
 
   const finished = Date.now();

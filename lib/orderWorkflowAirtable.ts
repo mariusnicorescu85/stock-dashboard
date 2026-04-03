@@ -107,6 +107,54 @@ function workflowGeneratedDateField(): string {
   return process.env.AIRTABLE_ORDER_FIELD_GENERATED_DATE?.trim() || "Generated date";
 }
 
+/** PDF §4.2 — worst-case runway in the group (Critical / High / Medium). Override name via env. */
+function workflowSeverityField(): string {
+  return process.env.AIRTABLE_ORDER_FIELD_SEVERITY?.trim() || "Severity";
+}
+
+/** PDF §4.3 — text/email owner on new drafts when `OPS_ORDER_DEFAULT_OWNER_EMAIL` is set. */
+function workflowAssignedOwnerField(): string {
+  return process.env.AIRTABLE_ORDER_FIELD_ASSIGNED_OWNER?.trim() || "Assigned owner";
+}
+
+/** PDF — supplier submission target date on new drafts (today + N days). Override name via env. */
+function workflowSubmissionDeadlineField(): string {
+  return (
+    process.env.AIRTABLE_ORDER_FIELD_SUBMISSION_DEADLINE?.trim() || "Submission deadline"
+  );
+}
+
+function submissionDeadlineDays(): number {
+  const raw = process.env.OPS_ORDER_SUBMISSION_DEADLINE_DAYS?.trim();
+  const n = raw ? Number.parseInt(raw, 10) : 3;
+  return Number.isFinite(n) && n >= 0 ? n : 3;
+}
+
+function defaultOwnerEmail(): string | null {
+  const v = process.env.OPS_ORDER_DEFAULT_OWNER_EMAIL?.trim();
+  return v || null;
+}
+
+function writeSeverityOnSync(): boolean {
+  return process.env.OPS_ORDER_DISABLE_SEVERITY?.trim() !== "1";
+}
+
+function writeSubmissionDeadlineOnSync(): boolean {
+  return process.env.OPS_ORDER_DISABLE_SUBMISSION_DEADLINE?.trim() !== "1";
+}
+
+/** Aligns with dashboard urgency bands (0–7 / 8–14 / 15–30 / rest). */
+function severityForReorderGroup(rows: ProductRecord[]): string {
+  const daysList = rows
+    .map((r) => r.daysUntilRunOut)
+    .filter((d): d is number => d != null && Number.isFinite(d));
+  if (daysList.length === 0) return "Medium";
+  const min = Math.min(...daysList);
+  if (min <= 7) return "Critical";
+  if (min <= 14) return "High";
+  return "Medium";
+}
+
 function primarySupplier(p: ProductRecord): string {
   const s = (p.supplier1 || p.supplier2 || "").trim();
   return s || "Unknown supplier";
@@ -321,6 +369,21 @@ export async function syncOrderWorkflowsFromProducts(options?: {
 
       if (supplierEmail) {
         wfFields[workflowSupplierEmailField()] = supplierEmail;
+      }
+
+      if (writeSeverityOnSync()) {
+        wfFields[workflowSeverityField()] = severityForReorderGroup(rows);
+      }
+
+      const ownerEmail = defaultOwnerEmail();
+      if (ownerEmail) {
+        wfFields[workflowAssignedOwnerField()] = ownerEmail;
+      }
+
+      if (writeSubmissionDeadlineOnSync()) {
+        const d = new Date();
+        d.setDate(d.getDate() + submissionDeadlineDays());
+        wfFields[workflowSubmissionDeadlineField()] = dateToYmd(d);
       }
 
       if (dryRun) {
