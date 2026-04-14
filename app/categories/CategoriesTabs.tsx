@@ -39,6 +39,8 @@ export type CategoryDemandBlock = {
   items: CategoryDemandRow[];
   /** When true, overview table omits current stock, incoming, and run-out (e.g. combo demand-only). */
   hideStockRunoutColumns?: boolean;
+  /** When true, overview omits Order-by and Qty to order (e.g. combos are bundles of individually stocked SKUs). */
+  hideOrderColumns?: boolean;
 };
 
 function sliceForYear(row: CategoryDemandRow, calYear: number): YearSalesSlice {
@@ -427,8 +429,12 @@ export default function CategoriesTabs(props: Props) {
                           <th className="px-3 py-2 text-right">Run-out</th>
                         </>
                       )}
-                      <th className="px-3 py-2 text-right">Order-by</th>
-                      <th className="px-3 py-2 text-right">Qty to order</th>
+                      {!block.hideOrderColumns && (
+                        <>
+                          <th className="px-3 py-2 text-right">Order-by</th>
+                          <th className="px-3 py-2 text-right">Qty to order</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -490,12 +496,16 @@ export default function CategoriesTabs(props: Props) {
                                 </td>
                               </>
                             )}
-                            <td className="px-3 py-2 text-right tabular-nums">
-                              {row.orderBy ?? "—"}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums font-bold text-emerald-200">
-                              {row.qtyToOrder}
-                            </td>
+                            {!block.hideOrderColumns && (
+                              <>
+                                <td className="px-3 py-2 text-right tabular-nums">
+                                  {row.orderBy ?? "—"}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums font-bold text-emerald-200">
+                                  {row.qtyToOrder}
+                                </td>
+                              </>
+                            )}
                           </tr>
                         );
                       })}

@@ -8,6 +8,7 @@ export type CategoryDemandBlockForNarration = {
   totalCurrentStock: number;
   totalDailyDemand: number;
   hideStockRunoutColumns?: boolean;
+  hideOrderColumns?: boolean;
   items: Array<{
     name: string;
     qtyToOrder: number;
@@ -153,8 +154,13 @@ export function buildCategoryDemandNarrationPayload(input: {
   const yearSet = new Set(historyYearsAsc);
 
   const categories = blocks.map((b) => {
-    const linesNeedingOrder = b.items.filter((r) => r.qtyToOrder > 0).length;
-    const totalQtyToOrder = b.items.reduce((s, r) => s + r.qtyToOrder, 0);
+    const skipReorder = b.hideOrderColumns === true;
+    const linesNeedingOrder = skipReorder
+      ? 0
+      : b.items.filter((r) => r.qtyToOrder > 0).length;
+    const totalQtyToOrder = skipReorder
+      ? 0
+      : b.items.reduce((s, r) => s + r.qtyToOrder, 0);
 
     const totalsByYear =
       demandWindow.kind === "fullYear"

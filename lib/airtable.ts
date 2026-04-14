@@ -70,6 +70,37 @@ export type ProductRecord = {
   briefingOrderedAt: string | null;
 };
 
+/**
+ * PYT SKUs hidden from the Categories page table, excluded from reorder/runout planning in-app
+ * (same effect as “Exclude from reorder”), while past sales still roll into category block totals.
+ * Names must match Airtable “Product”, case-insensitive after trim.
+ */
+const PRODUCT_NAMES_EXCLUDED_FROM_CATEGORY_DEMAND: readonly string[] = [
+  "Aria 25mm Pink Cheetah",
+  "Aria Ceramic Black",
+  "Aria Ceramic Les Fleurs",
+  "Aria 13mm Black",
+];
+
+const EXCLUDED_CATEGORY_DEMAND_NAMES = new Set(
+  PRODUCT_NAMES_EXCLUDED_FROM_CATEGORY_DEMAND.map((s) => s.trim().toLowerCase())
+);
+
+export function isProductNameExcludedFromCategoryDemand(name: string): boolean {
+  return EXCLUDED_CATEGORY_DEMAND_NAMES.has(name.trim().toLowerCase());
+}
+
+export function isExcludedFromCategoryDemand(p: ProductRecord): boolean {
+  return isProductNameExcludedFromCategoryDemand(p.name);
+}
+
+function clearRunwayForExcludedPlanningSkus(p: ProductRecord) {
+  if (!isProductNameExcludedFromCategoryDemand(p.name)) return;
+  p.daysUntilRunOut = null;
+  p.runOutDate = null;
+  p.orderByDate = null;
+}
+
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!;
 
@@ -328,11 +359,14 @@ async function fetchProductsFromTable(
         ? Number(f["Lead Time - Days"])
         : null;
 
+    const productName = String(f["Product"] ?? "");
+
     const excludeFromReorder =
       f["Exclude from reorder"] === true ||
       f["Exclude From Reorder"] === true ||
       f["No reorder"] === true ||
-      f["Clearance (no reorder)"] === true;
+      f["Clearance (no reorder)"] === true ||
+      isProductNameExcludedFromCategoryDemand(productName);
 
     const briefingSnoozeUntil = airtableDateFieldToYmd(
       f as Record<string, unknown>,
@@ -376,7 +410,7 @@ async function fetchProductsFromTable(
 
     const record: ProductRecord = {
       id: r.id,
-      name: String(f["Product"] ?? ""),
+      name: productName,
       sku,
       brand: f["Shop"],
       productType: f["Product Type"],
@@ -410,6 +444,7 @@ async function fetchProductsFromTable(
     };
 
     recomputeProductRunway(record);
+    clearRunwayForExcludedPlanningSkus(record);
     return record;
   });
 }
@@ -452,6 +487,10 @@ export async function fetchProducts(): Promise<ProductRecord[]> {
       p.orderMoq,
       p.orderPackSize
     );
+  }
+
+  for (const p of products) {
+    clearRunwayForExcludedPlanningSkus(p);
   }
 
   return products;

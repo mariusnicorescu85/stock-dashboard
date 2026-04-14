@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   fetchProducts,
   fetchDemandBreakdownForYear,
+  isExcludedFromCategoryDemand,
   ProductRecord,
 } from "@/lib/airtable";
 import {
@@ -93,6 +94,7 @@ const OPATRA_CATEGORY_BLOCKS: {
   label: string;
   description: string;
   hideStockRunoutColumns?: boolean;
+  hideOrderColumns?: boolean;
 }[] = [
   {
     id: "opatra-basic-skin-care",
@@ -133,6 +135,7 @@ const OPATRA_CATEGORY_BLOCKS: {
     description:
       "Opatra bundle / combo products — set Category to Combo in Airtable on those rows.",
     hideStockRunoutColumns: true,
+    hideOrderColumns: true,
   },
 ];
 
@@ -197,27 +200,34 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     days: demandDaysDenominatorForYear(y, categoryDemandNow),
   }));
 
-  function productsInCategory(catId: string): ProductRecord[] {
+  /**
+   * PYT Hairstyle category membership. When `forDisplay` is true, rows listed on the
+   * Categories page omit {@link isExcludedFromCategoryDemand} SKUs; totals can still use
+   * `forDisplay: false` so past sales stay in block aggregates.
+   */
+  function productsInCategory(catId: string, forDisplay = true): ProductRecord[] {
     const catLower = catId.toLowerCase();
 
+    let matched: ProductRecord[];
     if (catLower === "other") {
-      return products.filter((p) => {
+      matched = products.filter((p) => {
         const c = (p.category ?? "").toLowerCase();
         const brand = (p.brand ?? "").toLowerCase();
         return c === "other" && brand.includes("pyt");
       });
-    }
-
-    if (catLower === "cerami" || catLower === "ceramic") {
-      return products.filter((p) => {
+    } else if (catLower === "cerami" || catLower === "ceramic") {
+      matched = products.filter((p) => {
         const c = (p.category ?? "").toLowerCase();
         return c === "cerami" || c === "ceramic";
       });
+    } else {
+      matched = products.filter(
+        (p) => (p.category ?? "").toLowerCase() === catLower
+      );
     }
 
-    return products.filter(
-      (p) => (p.category ?? "").toLowerCase() === catLower
-    );
+    if (!forDisplay) return matched;
+    return matched.filter((p) => !isExcludedFromCategoryDemand(p));
   }
 
   function makeRowForProduct(
@@ -289,38 +299,46 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     items: ProductRecord[],
     opts?: {
       hideStockRunoutColumns?: boolean;
+      hideOrderColumns?: boolean;
       opatraComboExtraByYear?: Map<number, Map<string, number[]>>;
+      /** When set (PYT blocks), past sales / stock totals include these rows; `items` is the visible table. */
+      itemsForTotals?: ProductRecord[];
     }
   ): CategoryDemandBlock | null {
-    if (items.length === 0) return null;
+    const totalsProducts = opts?.itemsForTotals ?? items;
+    if (totalsProducts.length === 0) return null;
 
     const rowForProduct = makeRowForProduct(opts?.opatraComboExtraByYear);
     const rows = items.map(rowForProduct);
+    const totalsRows = totalsProducts.map(rowForProduct);
 
     const totalsByYear = histYears.map((y) => ({
       year: y,
-      total: rows.reduce(
+      total: totalsRows.reduce(
         (s, r) => s + (r.byYear.find((x) => x.year === y)?.totalUnits ?? 0),
         0
       ),
     }));
 
-    const totalCurrentStock = items.reduce((sum, p) => sum + p.currentStock, 0);
-    const totalIncomingStock = items.reduce(
+    const totalCurrentStock = totalsProducts.reduce(
+      (sum, p) => sum + p.currentStock,
+      0
+    );
+    const totalIncomingStock = totalsProducts.reduce(
       (sum, p) => sum + p.incomingStockTotal,
       0
     );
     const totalDailyDemand = roundDemandRate2(
-      items.reduce((sum, p) => sum + (p.dailyDemand ?? 0), 0)
+      totalsProducts.reduce((sum, p) => sum + (p.dailyDemand ?? 0), 0)
     );
     const avgLeadTime =
-      items.length > 0
+      totalsProducts.length > 0
         ? Math.round(
-            items.reduce(
+            totalsProducts.reduce(
               (sum, p) =>
                 sum + (p.leadTimeDays != null ? p.leadTimeDays : 0),
               0
-            ) / items.length
+            ) / totalsProducts.length
           )
         : 0;
 
@@ -336,6 +354,7 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
       avgLeadTime,
       items: rows,
       hideStockRunoutColumns: opts?.hideStockRunoutColumns,
+      hideOrderColumns: opts?.hideOrderColumns,
     };
   }
 
@@ -346,7 +365,8 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
       cat.id,
       cat.label,
       cat.description,
-      productsInCategory(cat.id)
+      productsInCategory(cat.id, true),
+      { itemsForTotals: productsInCategory(cat.id, false) }
     );
     if (b) blocks.push(b);
   }
@@ -358,6 +378,7 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
         : opatraIndividualsInCategory(cat.label, products);
     const b = demandBlockForItems(cat.id, cat.label, cat.description, items, {
       hideStockRunoutColumns: cat.hideStockRunoutColumns,
+      hideOrderColumns: cat.hideOrderColumns,
       opatraComboExtraByYear:
         cat.id === "opatra-combo" ? undefined : opatraComboExtraByYear,
     });
@@ -379,6 +400,7 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     totalCurrentStock: b.totalCurrentStock,
     totalDailyDemand: b.totalDailyDemand,
     hideStockRunoutColumns: b.hideStockRunoutColumns,
+    hideOrderColumns: b.hideOrderColumns,
     items: b.items.map((r) => ({
       name: r.name,
       qtyToOrder: r.qtyToOrder,
