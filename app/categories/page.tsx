@@ -491,10 +491,10 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <a
-                href="/api/categories/demand-export?shop=opatra&from=2025-04&to=2026-03"
+                href="/api/categories/demand-export?shop=opatra&from=2025-04&to=2026-03&layout=wide"
                 className="h-9 inline-flex items-center justify-center rounded-xl border border-slate-700/80 bg-slate-950/60 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-900/70 hover:border-emerald-400/40 transition"
               >
-                Download CSV (Apr 2025 → Mar 2026)
+                Download CSV (months as columns · Apr 2025 → Mar 2026)
               </a>
             </div>
           </div>

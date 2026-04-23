@@ -105,6 +105,7 @@ export async function GET(req: Request) {
   const shop = (searchParams.get("shop") ?? "opatra").trim().toLowerCase();
   const from = parseYyyyMm(searchParams.get("from"));
   const to = parseYyyyMm(searchParams.get("to"));
+  const layout = (searchParams.get("layout") ?? "long").trim().toLowerCase(); // long | wide
 
   if (!from || !to) {
     return NextResponse.json(
@@ -134,6 +135,12 @@ export async function GET(req: Request) {
   if (months.length === 0) {
     return NextResponse.json({ ok: false, error: "Empty month range." }, { status: 400 });
   }
+  if (layout !== "long" && layout !== "wide") {
+    return NextResponse.json(
+      { ok: false, error: 'Invalid "layout". Use layout=long or layout=wide.' },
+      { status: 400 }
+    );
+  }
 
   const products = await fetchProducts();
   const opatraIndividuals = products
@@ -148,31 +155,57 @@ export async function GET(req: Request) {
     attributedByMonth.set(monthKeyToYyyyMm(mk), attributedUnitsForMonth(raw));
   }
 
-  const header = ["month", "sku", "product", "units_sold"];
+  const monthCols = months.map((m) => monthKeyToYyyyMm(m));
   const lines: string[] = [];
-  lines.push(header.join(","));
 
-  for (const mk of months) {
-    const monthStr = monthKeyToYyyyMm(mk);
-    const unitsMap = attributedByMonth.get(monthStr) ?? new Map<string, number>();
+  if (layout === "wide") {
+    lines.push(["sku", "product", ...monthCols, "total"].map(csvEscape).join(","));
 
     for (const p of opatraIndividuals) {
-      const units = unitsMap.get(normName(p.name)) ?? 0;
-      // Keep zeros out to reduce file size; Excel pivots still work.
-      if (!Number.isFinite(units) || units <= 0) continue;
+      const norm = normName(p.name);
+      const rowMonths = monthCols.map((mc) => {
+        const unitsMap = attributedByMonth.get(mc) ?? new Map<string, number>();
+        const units = unitsMap.get(norm) ?? 0;
+        return Number.isFinite(units) && units > 0 ? Math.round(units) : 0;
+      });
+      const total = rowMonths.reduce((s, u) => s + u, 0);
+      // Keep fully-zero rows out to reduce noise.
+      if (total <= 0) continue;
+
       lines.push(
         [
-          csvEscape(monthStr),
           csvEscape((p.sku ?? "").trim()),
           csvEscape(p.name),
-          String(Math.round(units)),
+          ...rowMonths.map(String),
+          String(total),
         ].join(",")
       );
+    }
+  } else {
+    lines.push(["month", "sku", "product", "units_sold"].map(csvEscape).join(","));
+
+    for (const mk of months) {
+      const monthStr = monthKeyToYyyyMm(mk);
+      const unitsMap = attributedByMonth.get(monthStr) ?? new Map<string, number>();
+
+      for (const p of opatraIndividuals) {
+        const units = unitsMap.get(normName(p.name)) ?? 0;
+        // Keep zeros out to reduce file size; Excel pivots still work.
+        if (!Number.isFinite(units) || units <= 0) continue;
+        lines.push(
+          [
+            csvEscape(monthStr),
+            csvEscape((p.sku ?? "").trim()),
+            csvEscape(p.name),
+            String(Math.round(units)),
+          ].join(",")
+        );
+      }
     }
   }
 
   const csv = lines.join("\n") + "\n";
-  const filename = `demand-opatra-attributed-${monthKeyToYyyyMm(from)}_to_${monthKeyToYyyyMm(
+  const filename = `demand-opatra-attributed-${layout}-${monthKeyToYyyyMm(from)}_to_${monthKeyToYyyyMm(
     to
   )}.csv`;
 
