@@ -484,6 +484,20 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
               })}
             </div>
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/70">
+            <p className="text-xs text-slate-500">
+              Export: attributed Opatra demand (bundle units added into non-combo products).
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href="/api/categories/demand-export?shop=opatra&from=2025-04&to=2026-03"
+                className="h-9 inline-flex items-center justify-center rounded-xl border border-slate-700/80 bg-slate-950/60 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-900/70 hover:border-emerald-400/40 transition"
+              >
+                Download CSV (Apr 2025 → Mar 2026)
+              </a>
+            </div>
+          </div>
         </section>
 
         {categoryNarration ? (
