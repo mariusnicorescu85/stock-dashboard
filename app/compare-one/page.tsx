@@ -24,8 +24,13 @@ function formatYM(ym: string) {
   return `${m}/${y}`;
 }
 
-function isPromise(x: any): x is Promise<any> {
-  return x && typeof x.then === "function";
+function isPromise<T>(x: T | Promise<T>): x is Promise<T> {
+  return (
+    x != null &&
+    typeof x === "object" &&
+    "then" in x &&
+    typeof (x as Promise<T>).then === "function"
+  );
 }
 
 export default async function CompareOnePage(props: {
@@ -100,14 +105,6 @@ export default async function CompareOnePage(props: {
   const totalSelected = rows.reduce((sum, r) => sum + r.units, 0);
   const avgSelected =
     rows.length > 0 ? totalSelected / rows.length : null;
-
-  const allLink = product
-    ? `/compare-one?p=${product.id}&m=all`
-    : "/compare-one";
-
-  const last12Link = product
-    ? `/compare-one?p=${product.id}&m=last12`
-    : "/compare-one";
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">

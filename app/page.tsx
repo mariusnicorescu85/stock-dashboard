@@ -5,10 +5,8 @@ import AirtableBriefingTools from "@/app/briefing/AirtableBriefingTools";
 import {
   fetchProducts,
   ProductRecord,
-  fetchDemandForYear,
-  computeCategoryDemandFromYearly,
-  fetchDemandForYearMonth,
   fetchSalesTotalsAllTime,
+  type SalesTotals,
 } from "@/lib/airtable";
 import { formatMoneyForBrandOptional } from "@/lib/money";
 import { partitionRunoutBuckets } from "@/lib/stockBriefing";
@@ -178,17 +176,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const sp = await searchParams;
 
   const products = await fetchProducts();
-  const totalMap = await fetchSalesTotalsAllTime(); 
+  const totalMap = await fetchSalesTotalsAllTime();
 
-  const now = new Date();
-const targetYear = now.getFullYear() - 1;
-const targetMonth = now.getMonth() + 1;
-
-const demandMap = await fetchDemandForYearMonth(targetYear, targetMonth);
-const yearlyDemand = await fetchDemandForYear(targetYear);
-const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
-
-  const combos = products.filter((p) => p.productType !== "Individual");
   const buckets = partitionRunoutBuckets(products);
   const {
     individuals,
@@ -198,12 +187,8 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
     runningOut15to30,
     runningOut31to60,
   } = buckets;
-  const criticalSoon = individuals.filter(
-    (p) =>
-      !p.excludeFromReorder &&
-      p.daysUntilRunOut != null &&
-      p.daysUntilRunOut <= 14
-  );
+
+  const combos = products.filter((p) => p.productType !== "Individual");
 
   // Read view mode
   const qParam = Array.isArray(sp.q) ? sp.q[0] : sp.q;
@@ -267,6 +252,12 @@ const categoryDemand = computeCategoryDemandFromYearly(products, yearlyDemand);
             </p>
           </div>
           <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:justify-end sm:pt-1">
+            <Link
+              href="/monitor"
+              className="h-10 inline-flex items-center rounded-xl border border-teal-500/45 bg-teal-500/10 px-4 text-sm font-medium text-teal-200 hover:bg-teal-500/18"
+            >
+              Action monitor
+            </Link>
             <Link
               href="/briefing"
               className="h-10 inline-flex items-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 text-sm font-medium text-emerald-200 hover:bg-emerald-500/15"
@@ -557,42 +548,19 @@ function RunoutBucketByShop({
   );
 }
 
-function KPI({ 
-  label, 
-  value, 
-  icon, 
-  tone, 
-  description 
-}: { 
-  label: string; 
-  value: number; 
-  icon?: string; 
-  tone?: "default" | "warn";
-  description?: string;
+type ViewSortOption = { key: string; label: string };
+
+function ViewButton({
+  opt,
+  view,
+  sortBy,
+  query,
+}: {
+  opt: ViewSortOption;
+  view: string;
+  sortBy: string;
+  query: string;
 }) {
-  const badge =
-    tone === "warn"
-      ? "bg-amber-500/15 border-amber-400/40 text-amber-100"
-      : "bg-emerald-500/15 border-emerald-400/40 text-emerald-100";
-
-  return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-[0_16px_50px_rgba(0,0,0,0.35)]">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-wide text-slate-400">{label}</p>
-        {icon && <span className="text-lg text-slate-300">{icon}</span>}
-      </div>
-      <p className="mt-3 text-3xl font-semibold tabular-nums">{value}</p>
-      {description && (
-        <p className="mt-1 text-[10px] text-slate-500">{description}</p>
-      )}
-      <span className={`mt-2 inline-flex w-fit rounded-full border px-2 py-1 text-[11px] ${badge}`}>
-        Live
-      </span>
-    </div>
-  );
-}
-
-function ViewButton({ opt, view, sortBy, query }: any) {
   const params = new URLSearchParams();
   params.set("view", opt.key);
   if (sortBy) params.set("sort", sortBy);
@@ -614,7 +582,17 @@ function ViewButton({ opt, view, sortBy, query }: any) {
   );
 }
 
-function SortButton({ opt, view, sortBy, query }: any) {
+function SortButton({
+  opt,
+  view,
+  sortBy,
+  query,
+}: {
+  opt: ViewSortOption;
+  view: string;
+  sortBy: string;
+  query: string;
+}) {
   const params = new URLSearchParams();
   params.set("sort", opt.key);
   params.set("view", view);
@@ -636,7 +614,19 @@ function SortButton({ opt, view, sortBy, query }: any) {
   );
 }
 
-function Table({ sorted, opatra, pyt, others, totalsMap }: any) {
+function Table({
+  sorted,
+  opatra,
+  pyt,
+  others,
+  totalsMap,
+}: {
+  sorted: ProductRecord[];
+  opatra: ProductRecord[];
+  pyt: ProductRecord[];
+  others: ProductRecord[];
+  totalsMap: Map<string, SalesTotals>;
+}) {
   const sections = [
     { label: "Opatra", rows: opatra },
     { label: "PYT Hairstyle", rows: pyt },

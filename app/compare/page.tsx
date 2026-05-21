@@ -4,6 +4,20 @@ import { fetchProducts, fetchMonthlySalesForProduct } from "@/lib/airtable";
 
 export const dynamic = "force-dynamic";
 
+function isSearchParamsPromise(
+  x:
+    | Promise<{ a?: string; b?: string }>
+    | { a?: string; b?: string }
+    | undefined
+): x is Promise<{ a?: string; b?: string }> {
+  return (
+    x != null &&
+    typeof x === "object" &&
+    "then" in x &&
+    typeof (x as Promise<unknown>).then === "function"
+  );
+}
+
 function ymKey(monthStart: string | null) {
   if (!monthStart) return null;
   const d = new Date(monthStart);
@@ -21,11 +35,10 @@ function formatYM(ym: string) {
 export default async function ComparePage(props: {
   searchParams?: Promise<{ a?: string; b?: string }> | { a?: string; b?: string };
 }) {
-  // Next 16 can provide searchParams as a Promise in some cases
   const sp =
-    props.searchParams && typeof (props.searchParams as any).then === "function"
-      ? await (props.searchParams as Promise<{ a?: string; b?: string }>)
-      : ((props.searchParams as { a?: string; b?: string }) ?? {});
+    props.searchParams != null && isSearchParamsPromise(props.searchParams)
+      ? await props.searchParams
+      : (props.searchParams ?? {});
 
   const products = await fetchProducts();
 

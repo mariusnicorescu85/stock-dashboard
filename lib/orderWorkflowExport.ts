@@ -235,14 +235,6 @@ async function fetchOrderLinesForWorkflow(
   return fetchOrderLinesForWorkflowByLinkFilter(workflowRecordId);
 }
 
-function lineComputedTotal(fields: Record<string, unknown>): number {
-  const lt = numField(fields, fLineTotal(), "Line total");
-  if (lt > 0) return Math.round(lt * 100) / 100;
-  const q = numField(fields, fQty(), "Required quantity");
-  const u = numField(fields, fUnitCost(), "Unit cost");
-  return Math.round(q * u * 100) / 100;
-}
-
 /**
  * Load workflow + lines from Airtable and render CSV (§5 columns).
  */

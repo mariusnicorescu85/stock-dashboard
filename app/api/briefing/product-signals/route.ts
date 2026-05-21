@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authorizeCronRequest } from "@/app/api/cron/_shared";
+import { requireClerkUserId } from "@/lib/clerkAuth";
 import { dateToYmd } from "@/lib/calendar";
 
 export const dynamic = "force-dynamic";
@@ -31,12 +31,13 @@ type Action =
   | "clearOrdered";
 
 /**
- * POST — Authorization: Bearer CRON_SECRET
+ * POST — requires signed-in Clerk user (session cookie).
  * Body: { recordId, sourceTable, action }
  */
 export async function POST(req: Request) {
-  if (!authorizeCronRequest(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authUser = await requireClerkUserId();
+  if (authUser instanceof NextResponse) {
+    return authUser;
   }
 
   let body: { recordId?: string; sourceTable?: string; action?: Action };

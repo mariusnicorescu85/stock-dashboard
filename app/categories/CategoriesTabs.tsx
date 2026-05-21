@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import CategoryWhatIfPanel from "./CategoryWhatIfPanel";
+import CategoryDemandExportPanel from "./CategoryDemandExportPanel";
 import { MONTH_SHORT, fmtDemandRate } from "@/lib/categoryDemandDisplay";
 import { daysInMonth } from "@/lib/StockMath";
+import {
+  buildQuickExportSlices,
+  demandSliceKey,
+  downloadCategoryDemandCsv,
+  makeDemandSlice,
+  type DemandExportSlice,
+} from "@/lib/categoryDemandExport";
 
 export type YearSalesSlice = {
   year: number;
@@ -61,6 +69,7 @@ function compareRowsByProductName(a: CategoryDemandRow, b: CategoryDemandRow): n
 type TabId = "overview" | "monthly";
 
 type Props = {
+  shopLabel: string;
   primaryYear: number;
   historyYearsAsc: number[];
   daysInYearByYear: { year: number; days: number }[];
@@ -72,6 +81,14 @@ function daysInYearFromList(
   y: number
 ): number {
   return list.find((d) => d.year === y)?.days ?? 365;
+}
+
+function allProductIdsFromBlocks(blocks: CategoryDemandBlock[]): Set<string> {
+  const ids = new Set<string>();
+  for (const block of blocks) {
+    for (const item of block.items) ids.add(item.id);
+  }
+  return ids;
 }
 
 function MonthlyModeToggle(props: {
@@ -119,11 +136,31 @@ function MonthCells(props: {
   months: number[];
   calYear: number;
   mode: "units" | "daily";
+  productId: string;
+  productName: string;
+  brand?: string;
+  categoryLabel: string;
+  basketKeys: Set<string>;
+  basketEnabled: boolean;
+  onToggleBasket: (slice: DemandExportSlice) => void;
 }) {
-  const { months, calYear, mode } = props;
+  const {
+    months,
+    calYear,
+    mode,
+    productId,
+    productName,
+    brand,
+    categoryLabel,
+    basketKeys,
+    basketEnabled,
+    onToggleBasket,
+  } = props;
+
   return (
     <>
       {months.map((u, mi) => {
+        const month = mi + 1;
         const dim = daysInMonth(calYear, mi + 1);
         const impliedDaily = u > 0 && dim > 0 ? u / dim : 0;
         const show =
@@ -133,18 +170,73 @@ function MonthCells(props: {
               ? fmtDemandRate(impliedDaily)
               : "—";
         const muted = mode === "units" ? u === 0 : u === 0;
+        const key = demandSliceKey(productId, calYear, month);
+        const inBasket = basketKeys.has(key);
+        const clickable = basketEnabled && mode === "units";
+
+        const title =
+          mode === "units"
+            ? u === 0
+              ? `${MONTH_SHORT[mi]} ${calYear}: no sales`
+              : `${MONTH_SHORT[mi]} ${calYear}: ${u} units (~${fmtDemandRate(impliedDaily)}/day)`
+            : `${MONTH_SHORT[mi]} ${calYear}: ${u} units in ${dim} days`;
+
+        const basketTitle = inBasket
+          ? "Click to remove from export basket"
+          : "Click to add to export basket";
+
         return (
           <td
             key={mi}
             className={`px-1.5 py-2 text-right text-xs tabular-nums ${
               muted ? "text-slate-600" : "text-slate-200"
+            } ${
+              clickable
+                ? `cursor-pointer transition ${
+                    inBasket
+                      ? "bg-emerald-500/20 ring-1 ring-inset ring-emerald-400/50 text-emerald-100"
+                      : "hover:bg-slate-800/80"
+                  }`
+                : ""
             }`}
-            title={
-              mode === "units"
-                ? u === 0
-                  ? `${MONTH_SHORT[mi]} ${calYear}: no sales`
-                  : `${MONTH_SHORT[mi]} ${calYear}: ${u} units (~${fmtDemandRate(impliedDaily)}/day)`
-                : `${MONTH_SHORT[mi]} ${calYear}: ${u} units in ${dim} days`
+            title={clickable ? `${title} · ${basketTitle}` : title}
+            onClick={
+              clickable
+                ? () =>
+                    onToggleBasket(
+                      makeDemandSlice(
+                        productId,
+                        productName,
+                        brand,
+                        categoryLabel,
+                        calYear,
+                        month,
+                        u
+                      )
+                    )
+                : undefined
+            }
+            role={clickable ? "button" : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            onKeyDown={
+              clickable
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onToggleBasket(
+                        makeDemandSlice(
+                          productId,
+                          productName,
+                          brand,
+                          categoryLabel,
+                          calYear,
+                          month,
+                          u
+                        )
+                      );
+                    }
+                  }
+                : undefined
             }
           >
             {show}
@@ -161,8 +253,20 @@ function MonthlyTable(props: {
   daysInCalYear: number;
   block: CategoryDemandBlock;
   mode: "units" | "daily";
+  basketKeys: Set<string>;
+  basketEnabled: boolean;
+  onToggleBasket: (slice: DemandExportSlice) => void;
 }) {
-  const { label, calYear, daysInCalYear, block, mode } = props;
+  const {
+    label,
+    calYear,
+    daysInCalYear,
+    block,
+    mode,
+    basketKeys,
+    basketEnabled,
+    onToggleBasket,
+  } = props;
   const sorted = [...block.items].sort(compareRowsByProductName);
   const totalUnits =
     block.totalsByYear.find((t) => t.year === calYear)?.total ?? 0;
@@ -240,6 +344,13 @@ function MonthlyTable(props: {
                     months={sl.months}
                     calYear={calYear}
                     mode={mode}
+                    productId={row.id}
+                    productName={row.name}
+                    brand={row.brand}
+                    categoryLabel={block.label}
+                    basketKeys={basketKeys}
+                    basketEnabled={basketEnabled}
+                    onToggleBasket={onToggleBasket}
                   />
                   <td className="px-2 py-2 text-right text-xs tabular-nums text-emerald-200/90">
                     {fmtDemandRate(avgDay)}
@@ -308,9 +419,143 @@ function MonthlyTable(props: {
 }
 
 export default function CategoriesTabs(props: Props) {
-  const { primaryYear, historyYearsAsc, daysInYearByYear, blocks } = props;
+  const { shopLabel, primaryYear, historyYearsAsc, daysInYearByYear, blocks } = props;
   const [tab, setTab] = useState<TabId>("overview");
   const [monthlyMode, setMonthlyMode] = useState<"units" | "daily">("units");
+
+  const totalProductCount = useMemo(
+    () => blocks.reduce((n, b) => n + b.items.length, 0),
+    [blocks]
+  );
+
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(() =>
+    allProductIdsFromBlocks(blocks)
+  );
+  const [selectedYears, setSelectedYears] = useState<Set<number>>(
+    () => new Set(historyYearsAsc)
+  );
+  const [selectedMonths, setSelectedMonths] = useState<Set<number>>(
+    () => new Set(Array.from({ length: 12 }, (_, i) => i + 1))
+  );
+  const [includeZeros, setIncludeZeros] = useState(false);
+  const [basket, setBasket] = useState<Map<string, DemandExportSlice>>(() => new Map());
+
+  const blockSelectAllRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+
+  useEffect(() => {
+    setSelectedProductIds(allProductIdsFromBlocks(blocks));
+    setSelectedYears(new Set(historyYearsAsc));
+    setBasket(new Map());
+  }, [blocks, historyYearsAsc]);
+
+  const basketKeys = useMemo(() => new Set(basket.keys()), [basket]);
+
+  const basketSlices = useMemo(() => {
+    const slices = [...basket.values()];
+    slices.sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      if (a.month !== b.month) return a.month - b.month;
+      const cat = a.categoryLabel.localeCompare(b.categoryLabel, undefined, {
+        sensitivity: "base",
+      });
+      if (cat !== 0) return cat;
+      return a.productName.localeCompare(b.productName, undefined, {
+        sensitivity: "base",
+      });
+    });
+    return slices;
+  }, [basket]);
+
+  const quickSlices = useMemo(
+    () =>
+      buildQuickExportSlices(
+        blocks,
+        selectedProductIds,
+        selectedYears,
+        selectedMonths,
+        includeZeros
+      ),
+    [blocks, selectedProductIds, selectedYears, selectedMonths, includeZeros]
+  );
+
+  const toggleProduct = useCallback((id: string) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleBlockProducts = useCallback((block: CategoryDemandBlock) => {
+    setSelectedProductIds((prev) => {
+      const blockIds = block.items.map((r) => r.id);
+      const allOn = blockIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allOn) {
+        for (const id of blockIds) next.delete(id);
+      } else {
+        for (const id of blockIds) next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleYear = useCallback((year: number) => {
+    setSelectedYears((prev) => {
+      const next = new Set(prev);
+      if (next.has(year)) next.delete(year);
+      else next.add(year);
+      return next;
+    });
+  }, []);
+
+  const toggleMonth = useCallback((month: number) => {
+    setSelectedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(month)) next.delete(month);
+      else next.add(month);
+      return next;
+    });
+  }, []);
+
+  const toggleBasketSlice = useCallback((slice: DemandExportSlice) => {
+    const key = demandSliceKey(slice.productId, slice.year, slice.month);
+    setBasket((prev) => {
+      const next = new Map(prev);
+      if (next.has(key)) next.delete(key);
+      else next.set(key, slice);
+      return next;
+    });
+  }, []);
+
+  const removeBasketSlice = useCallback((key: string) => {
+    setBasket((prev) => {
+      const next = new Map(prev);
+      next.delete(key);
+      return next;
+    });
+  }, []);
+
+  const clearBasket = useCallback(() => setBasket(new Map()), []);
+
+  const downloadQuick = useCallback(() => {
+    downloadCategoryDemandCsv(shopLabel, quickSlices, "quick");
+  }, [shopLabel, quickSlices]);
+
+  const downloadBasket = useCallback(() => {
+    downloadCategoryDemandCsv(shopLabel, basketSlices, "basket");
+  }, [shopLabel, basketSlices]);
+
+  useEffect(() => {
+    for (const block of blocks) {
+      const el = blockSelectAllRefs.current.get(block.id);
+      if (!el) continue;
+      const blockIds = block.items.map((r) => r.id);
+      const selectedCount = blockIds.filter((id) => selectedProductIds.has(id)).length;
+      el.indeterminate = selectedCount > 0 && selectedCount < blockIds.length;
+    }
+  }, [blocks, selectedProductIds]);
 
   const yearsNewestFirst = [...historyYearsAsc].reverse();
 
@@ -338,6 +583,31 @@ export default function CategoriesTabs(props: Props) {
 
   return (
     <div className="space-y-4">
+      <CategoryDemandExportPanel
+        shopLabel={shopLabel}
+        historyYearsAsc={historyYearsAsc}
+        selectedProductCount={selectedProductIds.size}
+        totalProductCount={totalProductCount}
+        selectedYears={selectedYears}
+        onToggleYear={toggleYear}
+        onSelectAllYears={() => setSelectedYears(new Set(historyYearsAsc))}
+        onClearYears={() => setSelectedYears(new Set())}
+        selectedMonths={selectedMonths}
+        onToggleMonth={toggleMonth}
+        onSelectAllMonths={() =>
+          setSelectedMonths(new Set(Array.from({ length: 12 }, (_, i) => i + 1)))
+        }
+        onClearMonths={() => setSelectedMonths(new Set())}
+        includeZeros={includeZeros}
+        onIncludeZerosChange={setIncludeZeros}
+        quickSliceCount={quickSlices.length}
+        basketSlices={basketSlices}
+        onRemoveBasketSlice={removeBasketSlice}
+        onClearBasket={clearBasket}
+        onDownloadQuick={downloadQuick}
+        onDownloadBasket={downloadBasket}
+      />
+
       <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
         Layout
       </p>
@@ -352,7 +622,12 @@ export default function CategoriesTabs(props: Props) {
 
       {tab === "overview" && (
         <div className="space-y-4">
-          {blocks.map((block) => (
+          {blocks.map((block) => {
+            const blockIds = block.items.map((r) => r.id);
+            const blockAllSelected =
+              blockIds.length > 0 && blockIds.every((id) => selectedProductIds.has(id));
+
+            return (
             <div
               key={block.id}
               className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.4)] space-y-4"
@@ -402,6 +677,19 @@ export default function CategoriesTabs(props: Props) {
                 <table className="min-w-[720px] w-full text-sm">
                   <thead className="bg-slate-950/80 text-xs uppercase text-slate-400">
                     <tr>
+                      <th className="px-2 py-2 text-left w-10">
+                        <input
+                          ref={(el) => {
+                            if (el) blockSelectAllRefs.current.set(block.id, el);
+                            else blockSelectAllRefs.current.delete(block.id);
+                          }}
+                          type="checkbox"
+                          checked={blockAllSelected}
+                          onChange={() => toggleBlockProducts(block)}
+                          aria-label={`Select all in ${block.label}`}
+                          className="size-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                        />
+                      </th>
                       <th className="px-3 py-2 text-left">Product</th>
                       <th className="px-3 py-2 text-left">Brand</th>
                       {historyYearsAsc.map((y) => (
@@ -446,11 +734,23 @@ export default function CategoriesTabs(props: Props) {
                           primarySlice.totalUnits > 0
                             ? primarySlice.totalUnits / daysPrimary
                             : 0;
+                        const isSelected = selectedProductIds.has(row.id);
                         return (
                           <tr
                             key={row.id}
-                            className="border-t border-slate-900/70 odd:bg-slate-900/40 even:bg-slate-900/20"
+                            className={`border-t border-slate-900/70 odd:bg-slate-900/40 even:bg-slate-900/20 ${
+                              isSelected ? "" : "opacity-55"
+                            }`}
                           >
+                            <td className="px-2 py-2">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleProduct(row.id)}
+                                aria-label={`Include ${row.name} in quick export`}
+                                className="size-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                              />
+                            </td>
                             <td className="px-3 py-2">
                               <Link
                                 href={`/product/${row.id}`}
@@ -513,7 +813,8 @@ export default function CategoriesTabs(props: Props) {
                 </table>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -532,6 +833,10 @@ export default function CategoriesTabs(props: Props) {
               month&apos;s units ÷ days in the month).{" "}
               <strong className="text-slate-100">Sheet daily</strong> is the
               current forecast from each product row.
+            </p>
+            <p className="mt-2 text-xs text-emerald-300/80">
+              Export basket: switch to <strong className="text-emerald-100">Units sold</strong>{" "}
+              and click individual month cells to add or remove slices from your basket.
             </p>
             <div className="mt-4">
               <MonthlyModeToggle mode={monthlyMode} onChange={setMonthlyMode} />
@@ -561,6 +866,9 @@ export default function CategoriesTabs(props: Props) {
                   )}
                   block={block}
                   mode={monthlyMode}
+                  basketKeys={basketKeys}
+                  basketEnabled={monthlyMode === "units"}
+                  onToggleBasket={toggleBasketSlice}
                 />
               ))}
             </div>

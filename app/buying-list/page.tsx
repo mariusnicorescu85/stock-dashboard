@@ -69,6 +69,12 @@ export default async function BuyingListPage({
           <div className="flex flex-wrap items-center gap-3">
             <BuyingListShopSelect shop={shop} />
             <Link
+              href={`/monitor${shop !== "all" ? `?shop=${shop}` : ""}`}
+              className="h-10 inline-flex items-center rounded-xl border border-teal-600/55 bg-teal-500/10 px-3 text-sm font-medium text-teal-200 hover:bg-teal-500/16"
+            >
+              Action monitor
+            </Link>
+            <Link
               href="/briefing"
               className="h-10 inline-flex items-center rounded-xl border border-slate-600 bg-slate-900/60 px-3 text-sm text-slate-200 hover:bg-slate-800/80"
             >

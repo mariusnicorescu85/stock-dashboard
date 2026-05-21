@@ -5,26 +5,6 @@ import MasterStockClient from "./MasterStockClient";
 
 export const dynamic = "force-dynamic";
 
-// Placeholder shops - replace with real data later
-const PLACEHOLDER_SHOPS = [
-  { id: "shop1", name: "Shop A", dailyDemand: 20 },
-  { id: "shop2", name: "Shop B", dailyDemand: 15 },
-  { id: "shop3", name: "Shop C", dailyDemand: 10 },
-  { id: "shop4", name: "Shop D", dailyDemand: 12 },
-  { id: "shop5", name: "Shop E", dailyDemand: 8 },
-];
-
-type ShopAllocation = {
-  shopId: string;
-  allocatedStock: number;
-};
-
-type ProductAllocation = {
-  productId: string;
-  masterStock: number;
-  shopAllocations: ShopAllocation[];
-};
-
 export default async function MasterStockPage() {
   const products = await fetchProducts();
 

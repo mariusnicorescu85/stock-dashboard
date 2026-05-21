@@ -1,4 +1,5 @@
 // app/product/[id]/page.tsx
+import Link from "next/link";
 import { fetchProducts, fetchMonthlySalesForProduct } from "@/lib/airtable";
 import { formatMoneyForBrandOptional } from "@/lib/money";
 import { coverBufferDaysFromEnv } from "@/lib/reorderQty";
@@ -38,12 +39,12 @@ export default async function ProductDetailPage({
     return (
       <main className="min-h-screen bg-slate-950 text-slate-100">
         <div className="mx-auto max-w-5xl px-4 py-8">
-          <a
+          <Link
             href="/"
             className="text-sm text-slate-400 hover:text-slate-200"
           >
             ← Back to dashboard
-          </a>
+          </Link>
           <div className="mt-6 text-lg">Product not found.</div>
         </div>
       </main>
@@ -138,9 +139,9 @@ const trendLabel =
   return (
     <main className="min-h-screen text-slate-100">
       <div className="mx-auto max-w-5xl px-4 py-10 space-y-8">
-        <a href="/" className="text-sm text-slate-400 hover:text-slate-200">
+        <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
           ← Back to dashboard
-        </a>
+        </Link>
 
         {/* Header */}
         <header className="space-y-3">
@@ -214,7 +215,7 @@ const trendLabel =
                 <>
                   {" "}
                   → rounded to <span className="text-emerald-200/90 tabular-nums">{product.qtyToOrder}</span>{" "}
-                  (MOQ / pack)
+                  (supplier minimum · pack size)
                 </>
               ) : null}{" "}
               — (lead + {coverBufferDays}d buffer) × daily demand − effective stock.
@@ -222,7 +223,7 @@ const trendLabel =
             {(product.orderMoq != null || product.orderPackSize != null) && (
               <p className="mt-1 text-xs text-slate-500">
                 Airtable supplier rules:{" "}
-                {[product.orderMoq != null ? `MOQ ${product.orderMoq}` : null, product.orderPackSize != null ? `Pack ${product.orderPackSize}` : null]
+                {[product.orderMoq != null ? `Min order ${product.orderMoq} units` : null, product.orderPackSize != null ? `Pack size ${product.orderPackSize}` : null]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
@@ -423,95 +424,5 @@ const trendLabel =
 
       </div>
     </main>
-  );
-}
-
-type SalesChartProps = {
-  monthlySales: {
-    id: string;
-    label: string;
-    monthStart: string | null;
-    year: number | null;
-    month: number | null;
-    unitsSold: number;
-  }[];
-};
-
-// Simple server-rendered SVG bar chart (no client JS needed)
-function SalesChart({ monthlySales }: SalesChartProps) {
-  if (!monthlySales.length) return null;
-
-  const maxUnits = Math.max(
-    ...monthlySales.map((s) => s.unitsSold),
-    0
-  );
-
-  if (maxUnits === 0) {
-    return (
-      <p className="text-sm text-slate-400">
-        All months have zero units sold.
-      </p>
-    );
-  }
-
-  const barWidth = 32;
-  const barGap = 14;
-  const chartHeight = 80;
-
-  const width =
-    monthlySales.length * (barWidth + barGap) + barGap;
-  const height = chartHeight + 24; // extra for labels
-
-  return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="h-48 w-full"
-      preserveAspectRatio="xMidYMid meet"
-    >
-      {/* Axis baseline */}
-      <line
-        x1={0}
-        y1={chartHeight}
-        x2={width}
-        y2={chartHeight}
-        className="stroke-slate-700"
-        strokeWidth={1}
-      />
-      {monthlySales.map((s, index) => {
-        const barHeight =
-          (s.unitsSold / maxUnits) * chartHeight;
-        const x = barGap + index * (barWidth + barGap);
-        const y = chartHeight - barHeight;
-
-        const monthLabel =
-          s.month && s.year
-            ? `${s.month}/${String(s.year).slice(-2)}`
-            : s.label;
-
-        return (
-          <g key={s.id} transform={`translate(${x},0)`}>
-            <rect
-              x={0}
-              y={y}
-              width={barWidth}
-              height={barHeight}
-              rx={6}
-              className="fill-emerald-400"
-            >
-              <title>{`${monthLabel}: ${s.unitsSold} units`}</title>
-
-            </rect>
-            <text
-              x={barWidth / 2}
-              y={chartHeight + 12}
-              textAnchor="middle"
-              className="fill-slate-300 text-[9px]"
-            >
-              {monthLabel}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
   );
 }

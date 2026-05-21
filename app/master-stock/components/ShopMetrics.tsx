@@ -54,14 +54,12 @@ export default function ShopMetrics({ products, allocations, activeShops }: Prop
     });
 
     const avgDays = count > 0 ? totalDays / count : null;
-    const totalDailyDemand = shop.dailyDemand * individuals.length;
 
     return {
       shop,
       totalAllocated,
       avgDays,
       fastestConsuming: fastestConsuming > 0 ? fastestConsuming : null,
-      totalDailyDemand,
     };
   });
 
@@ -72,7 +70,7 @@ export default function ShopMetrics({ products, allocations, activeShops }: Prop
     <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
       <h2 className="text-lg font-semibold text-slate-200 mb-4">Shop Performance</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {shopMetrics.map(({ shop, totalAllocated, avgDays, fastestConsuming, totalDailyDemand }) => (
+        {shopMetrics.map(({ shop, totalAllocated, avgDays, fastestConsuming }) => (
           <div
             key={shop.id}
             className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-4"

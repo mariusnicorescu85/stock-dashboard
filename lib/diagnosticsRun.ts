@@ -59,6 +59,35 @@ export async function runDiagnostics(): Promise<DiagnosticsReport> {
 
   const isDev = process.env.NODE_ENV === "development";
 
+  // --- Clerk (dashboard sign-in) ---
+  const clerkPk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() ?? "";
+  const clerkSecret = process.env.CLERK_SECRET_KEY?.trim() ?? "";
+  if (!clerkPk || !clerkSecret) {
+    push(
+      checks,
+      "clerk-env",
+      nextOrder(),
+      "Clerk authentication",
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY gate the app via middleware.",
+      isDev ? "warn" : "error",
+      !clerkPk && !clerkSecret
+        ? "Both missing — pages and APIs will fail auth until Clerk keys are set."
+        : !clerkPk
+          ? "Missing NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY."
+          : "Missing CLERK_SECRET_KEY."
+    );
+  } else {
+    push(
+      checks,
+      "clerk-env",
+      nextOrder(),
+      "Clerk authentication",
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY gate the app via middleware.",
+      "ok",
+      "Present."
+    );
+  }
+
   // --- Core Airtable env ---
   const apiKey = process.env.AIRTABLE_API_KEY?.trim() ?? "";
   const baseId = process.env.AIRTABLE_BASE_ID?.trim() ?? "";
@@ -263,40 +292,6 @@ export async function runDiagnostics(): Promise<DiagnosticsReport> {
       "AIRTABLE_ORDER_WORKFLOWS_TABLE + AIRTABLE_ORDER_LINES_TABLE enable POST /api/cron/sync-order-workflows.",
       "ok",
       `Tables: ${orderWf}, ${orderLn}.`
-    );
-  }
-
-  const opsUser = process.env.OPS_BASIC_AUTH_USER?.trim();
-  const opsPass = process.env.OPS_BASIC_AUTH_PASSWORD?.trim();
-  if (opsUser && opsPass) {
-    push(
-      checks,
-      "ops-basic-auth",
-      nextOrder(),
-      "Ops pages Basic Auth",
-      "OPS_BASIC_AUTH_USER + OPS_BASIC_AUTH_PASSWORD protect /ops/* in middleware.",
-      "ok",
-      "Both set — /ops routes require Basic authentication."
-    );
-  } else if (opsUser || opsPass) {
-    push(
-      checks,
-      "ops-basic-auth",
-      nextOrder(),
-      "Ops pages Basic Auth",
-      "Set both OPS_BASIC_AUTH_USER and OPS_BASIC_AUTH_PASSWORD to enable /ops protection.",
-      "warn",
-      "Only one of the two is set — middleware will not enforce auth until both are set."
-    );
-  } else {
-    push(
-      checks,
-      "ops-basic-auth",
-      nextOrder(),
-      "Ops pages Basic Auth",
-      "Optional: OPS_BASIC_AUTH_USER + OPS_BASIC_AUTH_PASSWORD protect /ops/*.",
-      "warn",
-      "Not set — /ops is public (same as the rest of the site)."
     );
   }
 

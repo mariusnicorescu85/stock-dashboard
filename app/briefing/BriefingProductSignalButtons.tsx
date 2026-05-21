@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BriefingTopReorder } from "@/lib/stockBriefing";
 
-const STORAGE_KEY = "stock-dash-cron-secret";
-
 type Action =
   | "snooze3"
   | "snooze7"
@@ -28,26 +26,11 @@ export default function BriefingProductSignalButtons({
   }
 
   async function run(action: Action) {
-    let secret: string;
-    try {
-      secret = sessionStorage.getItem(STORAGE_KEY) || "";
-    } catch {
-      secret = "";
-    }
-    secret = secret.trim();
-    if (!secret) {
-      window.alert(
-        "Enter your cron secret in “Airtable from dashboard” above and optional “Remember in this browser”."
-      );
-      return;
-    }
-
     setBusy(true);
     try {
       const res = await fetch("/api/briefing/product-signals", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${secret}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

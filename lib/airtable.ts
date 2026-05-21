@@ -123,6 +123,8 @@ if (!AIRTABLE_API_KEY?.trim() || !AIRTABLE_BASE_ID?.trim()) {
 
 type AirtableRecord = {
   id: string;
+  /** Dynamic Airtable cell shapes (numbers, strings, arrays, links). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Airtable records have heterogeneous field types
   fields: Record<string, any>;
 };
 

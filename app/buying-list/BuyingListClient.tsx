@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AirtableBriefingTools from "@/app/briefing/AirtableBriefingTools";
 import BriefingProductSignalButtons from "@/app/briefing/BriefingProductSignalButtons";
 import {
@@ -17,8 +17,6 @@ import {
 } from "@/lib/money";
 
 export type { BuyingListRow };
-
-const CRON_SECRET_STORAGE_KEY = "stock-dash-cron-secret";
 
 const MAILTO_BODY_MAX = 1800;
 
@@ -37,49 +35,72 @@ export default function BuyingListClient({
     return m;
   });
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(rows.map((r) => r.id))
+  );
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
   const [smtpTo, setSmtpTo] = useState("");
   const [smtpMessage, setSmtpMessage] = useState<string | null>(null);
   const [smtpBusy, setSmtpBusy] = useState(false);
+
+  useEffect(() => {
+    setSelectedIds(new Set(rows.map((r) => r.id)));
+  }, [rows]);
 
   const merged = useMemo(
     () => rows.map((r) => ({ ...r, qty: qtyById[r.id] ?? 0 })),
     [rows, qtyById]
   );
 
+  const selectedMerged = useMemo(
+    () => merged.filter((r) => selectedIds.has(r.id)),
+    [merged, selectedIds]
+  );
+
+  const allSelected = merged.length > 0 && selectedMerged.length === merged.length;
+  const someSelected = selectedMerged.length > 0 && !allSelected;
+  const noneSelected = selectedMerged.length === 0;
+
+  useEffect(() => {
+    const el = selectAllRef.current;
+    if (el) el.indeterminate = someSelected;
+  }, [someSelected]);
+
   const totalUnits = useMemo(
-    () => merged.reduce((s, r) => s + Math.max(0, r.qty), 0),
-    [merged]
+    () => selectedMerged.reduce((s, r) => s + Math.max(0, r.qty), 0),
+    [selectedMerged]
   );
 
   const totalValueEur = useMemo(
     () =>
-      merged.reduce((s, r) => {
+      selectedMerged.reduce((s, r) => {
         const q = Math.max(0, r.qty);
         if (r.purchaseCurrency !== "EUR") return s;
         if (r.pricePerUnit == null || !Number.isFinite(r.pricePerUnit)) return s;
         return s + q * r.pricePerUnit;
       }, 0),
-    [merged]
+    [selectedMerged]
   );
 
   const totalValueUsd = useMemo(
     () =>
-      merged.reduce((s, r) => {
+      selectedMerged.reduce((s, r) => {
         const q = Math.max(0, r.qty);
         if (r.purchaseCurrency !== "USD") return s;
         if (r.pricePerUnit == null || !Number.isFinite(r.pricePerUnit)) return s;
         return s + q * r.pricePerUnit;
       }, 0),
-    [merged]
+    [selectedMerged]
   );
 
   const linesMissingPrice = useMemo(
     () =>
-      merged.filter((r) => {
+      selectedMerged.filter((r) => {
         const q = Math.max(0, r.qty);
         return q > 0 && (r.pricePerUnit == null || !Number.isFinite(r.pricePerUnit));
       }).length,
-    [merged]
+    [selectedMerged]
   );
 
   const setQty = useCallback((id: string, raw: string) => {
@@ -87,9 +108,24 @@ export default function BuyingListClient({
     setQtyById((prev) => ({ ...prev, [id]: Number.isFinite(n) ? Math.max(0, n) : 0 }));
   }, []);
 
+  const toggleRow = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    setSelectedIds((prev) =>
+      prev.size === merged.length ? new Set() : new Set(merged.map((r) => r.id))
+    );
+  }, [merged]);
+
   const downloadCsvToFile = useCallback(
     (filename: string) => {
-      const csv = buildBuyingListCsv(merged);
+      const csv = buildBuyingListCsv(selectedMerged);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -98,12 +134,13 @@ export default function BuyingListClient({
       a.click();
       URL.revokeObjectURL(url);
     },
-    [merged]
+    [selectedMerged]
   );
 
   const downloadCsv = useCallback(() => {
+    if (selectedMerged.length === 0) return;
     downloadCsvToFile(buyingListCsvFilename(shopLabel));
-  }, [downloadCsvToFile, shopLabel]);
+  }, [downloadCsvToFile, shopLabel, selectedMerged.length]);
 
   const smtpTextBody = useMemo(() => {
     const valueLine =
@@ -126,20 +163,11 @@ export default function BuyingListClient({
   ]);
 
   const sendViaGmailSmtp = useCallback(async () => {
+    if (selectedMerged.length === 0) return;
     setSmtpMessage(null);
-    let secret = "";
-    try {
-      secret = sessionStorage.getItem(CRON_SECRET_STORAGE_KEY) ?? "";
-    } catch {
-      /* ignore */
-    }
-    if (!secret.trim()) {
-      setSmtpMessage("Enter your cron secret above first (same as CRON_SECRET).");
-      return;
-    }
 
     const filename = buyingListCsvFilename(shopLabel);
-    const csv = buildBuyingListCsv(merged);
+    const csv = buildBuyingListCsv(selectedMerged);
     const subject = `Buying list — ${shopLabel} — ${dateLabel}`;
 
     setSmtpBusy(true);
@@ -148,7 +176,6 @@ export default function BuyingListClient({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${secret.trim()}`,
         },
         body: JSON.stringify({
           to: smtpTo.trim(),
@@ -169,9 +196,10 @@ export default function BuyingListClient({
     } finally {
       setSmtpBusy(false);
     }
-  }, [merged, shopLabel, dateLabel, smtpTextBody, smtpTo]);
+  }, [selectedMerged, shopLabel, dateLabel, smtpTextBody, smtpTo]);
 
   const openGmailWithCsv = useCallback(() => {
+    if (selectedMerged.length === 0) return;
     const filename = buyingListCsvFilename(shopLabel);
     downloadCsvToFile(filename);
 
@@ -202,8 +230,9 @@ export default function BuyingListClient({
   ]);
 
   const mailtoHref = useMemo(() => {
+    if (selectedMerged.length === 0) return null;
     const subject = `Buying list — ${shopLabel} — ${dateLabel}`;
-    const lines = merged.map((r, i) => {
+    const lines = selectedMerged.map((r, i) => {
       const q = Math.max(0, r.qty);
       const extra =
         r.pricePerUnit != null && Number.isFinite(r.pricePerUnit)
@@ -228,7 +257,7 @@ export default function BuyingListClient({
             : "");
     }
     return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }, [merged, shopLabel, dateLabel, totalUnits, totalValueEur, totalValueUsd, linesMissingPrice]);
+  }, [selectedMerged, shopLabel, dateLabel, totalUnits, totalValueEur, totalValueUsd, linesMissingPrice]);
 
   if (rows.length === 0) {
     return (
@@ -244,10 +273,14 @@ export default function BuyingListClient({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm text-slate-400">
-          <span className="text-slate-200 font-medium tabular-nums">{merged.length}</span> product
-          {merged.length !== 1 ? "s" : ""} ·{" "}
-          <span className="text-emerald-200/90 font-semibold tabular-nums">{totalUnits}</span> total units
-          (after edits)
+          <span className="text-slate-200 font-medium tabular-nums">{selectedMerged.length}</span> of{" "}
+          <span className="text-slate-200 font-medium tabular-nums">{merged.length}</span> selected ·{" "}
+          <span className="text-emerald-200/90 font-semibold tabular-nums">{totalUnits}</span> units
+          {noneSelected ? (
+            <span className="text-amber-200/90"> — tick rows to export</span>
+          ) : (
+            " (selected, after qty edits)"
+          )}
           {totalValueEur > 0 || totalValueUsd > 0 ? (
             <>
               {" "}
@@ -269,23 +302,34 @@ export default function BuyingListClient({
           <button
             type="button"
             onClick={downloadCsv}
-            className="h-10 inline-flex items-center justify-center rounded-xl border border-slate-600 bg-slate-900/70 px-4 text-sm font-medium text-slate-100 hover:bg-slate-800/90"
+            disabled={noneSelected}
+            className="h-10 inline-flex items-center justify-center rounded-xl border border-slate-600 bg-slate-900/70 px-4 text-sm font-medium text-slate-100 hover:bg-slate-800/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Download CSV
           </button>
           <button
             type="button"
             onClick={openGmailWithCsv}
-            className="h-10 inline-flex items-center justify-center rounded-xl bg-emerald-500/90 px-4 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+            disabled={noneSelected}
+            className="h-10 inline-flex items-center justify-center rounded-xl bg-emerald-500/90 px-4 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Draft in Gmail
           </button>
-          <a
-            href={mailtoHref}
-            className="h-10 inline-flex items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/50 px-3 text-sm font-medium text-slate-300 hover:bg-slate-800/70"
-          >
-            Other mail app
-          </a>
+          {mailtoHref ? (
+            <a
+              href={mailtoHref}
+              className="h-10 inline-flex items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/50 px-3 text-sm font-medium text-slate-300 hover:bg-slate-800/70"
+            >
+              Other mail app
+            </a>
+          ) : (
+            <span
+              aria-disabled="true"
+              className="h-10 inline-flex items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/50 px-3 text-sm font-medium text-slate-300 opacity-40 cursor-not-allowed"
+            >
+              Other mail app
+            </span>
+          )}
         </div>
       </div>
 
@@ -293,7 +337,7 @@ export default function BuyingListClient({
         <p className="text-xs text-slate-500">
           Send from server via Gmail SMTP (needs <span className="text-slate-400">GMAIL_USER</span> +{" "}
           <span className="text-slate-400">GMAIL_APP_PASSWORD</span> on Vercel / <span className="text-slate-400">.env.local</span>
-          ). Uses the same cron secret as above.
+          ). You must be signed in.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <input
@@ -306,9 +350,9 @@ export default function BuyingListClient({
           />
           <button
             type="button"
-            disabled={smtpBusy}
+            disabled={smtpBusy || noneSelected}
             onClick={sendViaGmailSmtp}
-            className="h-10 inline-flex items-center justify-center rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 text-sm font-semibold text-amber-100 hover:bg-amber-500/25 disabled:opacity-50"
+            className="h-10 inline-flex items-center justify-center rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 text-sm font-semibold text-amber-100 hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {smtpBusy ? "Sending…" : "Email CSV (SMTP)"}
           </button>
@@ -326,6 +370,16 @@ export default function BuyingListClient({
         <table className="min-w-full text-sm">
           <thead className="sticky top-0 z-10 bg-slate-950/90 text-[11px] uppercase text-slate-400 border-b border-slate-800/60">
             <tr>
+              <th className="px-3 py-3 text-left w-10">
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  aria-label={allSelected ? "Clear all products" : "Select all products"}
+                  className="size-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                />
+              </th>
               <th className="px-4 py-3 text-left">Product</th>
               <th className="px-4 py-3 text-left hidden sm:table-cell">Brand</th>
               <th className="px-4 py-3 text-left">Order by</th>
@@ -337,11 +391,24 @@ export default function BuyingListClient({
             </tr>
           </thead>
           <tbody>
-            {merged.map((r) => (
+            {merged.map((r) => {
+              const isSelected = selectedIds.has(r.id);
+              return (
               <tr
                 key={r.id}
-                className="border-t border-slate-900/60 odd:bg-slate-900/40 even:bg-slate-900/20"
+                className={`border-t border-slate-900/60 odd:bg-slate-900/40 even:bg-slate-900/20 ${
+                  isSelected ? "" : "opacity-55"
+                }`}
               >
+                <td className="px-3 py-3">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleRow(r.id)}
+                    aria-label={`Include ${r.name} in export`}
+                    className="size-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                  />
+                </td>
                 <td className="px-4 py-3 text-slate-100 font-medium">{r.name}</td>
                 <td className="px-4 py-3 text-slate-400 hidden sm:table-cell">{r.brand ?? "—"}</td>
                 <td className="px-4 py-3 text-slate-300 tabular-nums">{formatOrderByForCsv(r.orderByDate)}</td>
@@ -377,18 +444,20 @@ export default function BuyingListClient({
                   </Link>
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>
 
       <p className="text-xs text-slate-500">
+        Tick the checkboxes for the products you want in the CSV or email; use the header box to select or clear all.
         “Draft in Gmail” downloads the CSV and opens a compose tab — attach the file from Downloads yourself. “Email
         CSV (SMTP)” sends from your configured Gmail account with the CSV attached. You can skip the recipient field
         if the server has <span className="text-slate-400">BUYING_LIST_EMAIL_TO</span> set. “Other mail app” uses your
-        default client (long lists may be shortened; the CSV is always complete). Quantities here are for export /
-        email only; they do not update Airtable. The <strong className="text-slate-400">Airtable</strong> column updates
-        snooze / order dates (use the cron secret above).
+        default client (long lists may be shortened; the CSV matches your selection). Quantities here are for export /
+        email only; they do not update Airtable. The <strong className="text-slate-400">Airtable</strong> column
+        updates snooze / order dates (sign in required).
       </p>
     </div>
   );

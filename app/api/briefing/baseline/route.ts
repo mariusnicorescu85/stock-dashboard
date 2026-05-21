@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authorizeCronRequest } from "@/app/api/cron/_shared";
+import { requireClerkUserId } from "@/lib/clerkAuth";
 import { upsertBriefingBaselineFromBriefing } from "@/lib/briefingBaselineAirtable";
 import { fetchProducts } from "@/lib/airtable";
 import {
@@ -10,12 +10,12 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * POST — same auth as GET /api/cron/stock-briefing.
- * Saves headline briefing metrics to the Airtable baseline row (manual / dashboard).
+ * POST — requires signed-in Clerk user. Saves headline briefing metrics to the Airtable baseline row.
  */
-export async function POST(req: Request) {
-  if (!authorizeCronRequest(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST() {
+  const authUser = await requireClerkUserId();
+  if (authUser instanceof NextResponse) {
+    return authUser;
   }
 
   const products = await fetchProducts();

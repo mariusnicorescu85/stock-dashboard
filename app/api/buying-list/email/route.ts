@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authorizeCronRequest } from "@/app/api/cron/_shared";
+import { requireClerkUserId } from "@/lib/clerkAuth";
 import { sendBuyingListViaGmailSMTP } from "@/lib/sendBuyingListGmail";
 
 const MAX_CSV_BYTES = 3 * 1024 * 1024;
@@ -7,8 +7,9 @@ const MAX_CSV_BYTES = 3 * 1024 * 1024;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
-  if (!authorizeCronRequest(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authUser = await requireClerkUserId();
+  if (authUser instanceof NextResponse) {
+    return authUser;
   }
 
   let body: unknown;

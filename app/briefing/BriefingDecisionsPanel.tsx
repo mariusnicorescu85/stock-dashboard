@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { BriefingDecision, BriefingDecisionSeverity } from "@/lib/briefingDecisions";
 
 function severityStyles(s: BriefingDecisionSeverity): {
@@ -43,19 +43,20 @@ function severityLabel(s: BriefingDecisionSeverity): string {
   return "All clear";
 }
 
-export default function BriefingDecisionsPanel({ decisions }: { decisions: BriefingDecision[] }) {
+export default function BriefingDecisionsPanel({
+  decisions,
+}: {
+  decisions: BriefingDecision[];
+}) {
   const idKey = decisions.map((d) => d.id).join("|");
+  if (decisions.length === 0) return null;
+  return <BriefingDecisionsPanelInner key={idKey} decisions={decisions} />;
+}
+
+function BriefingDecisionsPanelInner({ decisions }: { decisions: BriefingDecision[] }) {
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(decisions.map((d) => [d.id, d.severity === "critical"]))
   );
-
-  useEffect(() => {
-    setExpandedById(
-      Object.fromEntries(decisions.map((d) => [d.id, d.severity === "critical"]))
-    );
-  }, [idKey]);
-
-  if (decisions.length === 0) return null;
 
   function toggle(id: string) {
     setExpandedById((prev) => ({ ...prev, [id]: !prev[id] }));

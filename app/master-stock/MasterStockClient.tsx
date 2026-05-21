@@ -52,54 +52,60 @@ export default function MasterStockClient({ products }: { products: ProductRecor
 
   // Initialize allocations from products (for all products, but we'll filter display)
   useEffect(() => {
-    // Try to load from localStorage first
-    const saved = localStorage.getItem(`stock-allocations-${activeCategory}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const loaded = new Map<string, ProductAllocation>();
-        products.forEach((p) => {
-          const savedAlloc = parsed[p.id];
-          if (savedAlloc) {
-            // Update master stock from current data but keep allocations
-            loaded.set(p.id, {
-              ...savedAlloc,
-              masterStock: p.currentStock + p.incomingStockTotal,
-            });
-          } else {
-            // New product, initialize
-            loaded.set(p.id, {
-              productId: p.id,
-              masterStock: p.currentStock + p.incomingStockTotal,
-              shopAllocations: [...OPATRA_SHOPS, ...PYT_SHOPS].map((shop) => ({
-                shopId: shop.id,
-                allocatedStock: 0,
-              })),
-            });
-          }
-        });
-        setAllocations(loaded);
-        return;
-      } catch (e) {
-        console.error("Failed to load saved allocations", e);
-      }
-    }
+    let cancelled = false;
 
-    // Initialize fresh
-    const initial = new Map<string, ProductAllocation>();
-    products.forEach((p) => {
-      if (!initial.has(p.id)) {
-        initial.set(p.id, {
-          productId: p.id,
-          masterStock: p.currentStock + p.incomingStockTotal,
-          shopAllocations: [...OPATRA_SHOPS, ...PYT_SHOPS].map((shop) => ({
-            shopId: shop.id,
-            allocatedStock: 0,
-          })),
-        });
+    queueMicrotask(() => {
+      if (cancelled) return;
+
+      const saved = localStorage.getItem(`stock-allocations-${activeCategory}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as Record<string, ProductAllocation>;
+          const loaded = new Map<string, ProductAllocation>();
+          products.forEach((p) => {
+            const savedAlloc = parsed[p.id];
+            if (savedAlloc) {
+              loaded.set(p.id, {
+                ...savedAlloc,
+                masterStock: p.currentStock + p.incomingStockTotal,
+              });
+            } else {
+              loaded.set(p.id, {
+                productId: p.id,
+                masterStock: p.currentStock + p.incomingStockTotal,
+                shopAllocations: [...OPATRA_SHOPS, ...PYT_SHOPS].map((shop) => ({
+                  shopId: shop.id,
+                  allocatedStock: 0,
+                })),
+              });
+            }
+          });
+          if (!cancelled) setAllocations(loaded);
+          return;
+        } catch (e) {
+          console.error("Failed to load saved allocations", e);
+        }
       }
+
+      const initial = new Map<string, ProductAllocation>();
+      products.forEach((p) => {
+        if (!initial.has(p.id)) {
+          initial.set(p.id, {
+            productId: p.id,
+            masterStock: p.currentStock + p.incomingStockTotal,
+            shopAllocations: [...OPATRA_SHOPS, ...PYT_SHOPS].map((shop) => ({
+              shopId: shop.id,
+              allocatedStock: 0,
+            })),
+          });
+        }
+      });
+      if (!cancelled) setAllocations(initial);
     });
-    setAllocations(initial);
+
+    return () => {
+      cancelled = true;
+    };
   }, [products, activeCategory]);
 
   // Save allocations to localStorage whenever they change

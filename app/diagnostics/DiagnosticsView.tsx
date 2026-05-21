@@ -61,8 +61,13 @@ export function DiagnosticsView({ report }: { report: DiagnosticsReport }) {
   const [revealed, setRevealed] = useState(0);
 
   useEffect(() => {
-    setRevealed(0);
-    if (report.checks.length === 0) return;
+    if (report.checks.length === 0) {
+      queueMicrotask(() => setRevealed(0));
+      return;
+    }
+
+    queueMicrotask(() => setRevealed(0));
+
     let i = 0;
     const id = window.setInterval(() => {
       i += 1;

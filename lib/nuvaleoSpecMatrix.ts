@@ -122,7 +122,7 @@ export const NUVALEO_SPEC_MATRIX: NuvaleoSpecMatrixRow[] = [
     requirement: "Manager opens system (read-only visibility without Airtable)",
     status: "Partial",
     implementedWhere: "/ops/orders (read-only progress view)",
-    notes: "Optional OPS_BASIC_AUTH_USER + OPS_BASIC_AUTH_PASSWORD (middleware on /ops/*).",
+    notes: "Clerk protects the app (including /ops/*); sign-in required.",
   },
   {
     pdfRef: "Ops — schedule",
