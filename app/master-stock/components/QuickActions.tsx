@@ -138,33 +138,33 @@ export default function QuickActions({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-      <h2 className="text-lg font-semibold text-slate-200 mb-4">Quick Actions</h2>
+    <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-zinc-800 mb-4">Quick Actions</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <button
           onClick={distributeEvenly}
-          className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-900/80 hover:border-emerald-400/40 transition-colors"
+          className="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-800 hover:bg-zinc-100 hover:border-indigo-400/40 transition-colors"
         >
           <div className="text-lg mb-1">⚖️</div>
           <div>Distribute Evenly</div>
         </button>
         <button
           onClick={distributeByDemand}
-          className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-900/80 hover:border-emerald-400/40 transition-colors"
+          className="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-800 hover:bg-zinc-100 hover:border-indigo-400/40 transition-colors"
         >
           <div className="text-lg mb-1">📊</div>
           <div>By Demand</div>
         </button>
         <button
           onClick={() => allocateToTargetDays(30)}
-          className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-900/80 hover:border-emerald-400/40 transition-colors"
+          className="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-800 hover:bg-zinc-100 hover:border-indigo-400/40 transition-colors"
         >
           <div className="text-lg mb-1">🎯</div>
           <div>30 Days Coverage</div>
         </button>
         <button
           onClick={clearAll}
-          className="rounded-xl border border-red-700/80 bg-red-950/60 px-4 py-3 text-sm font-medium text-red-200 hover:bg-red-900/80 hover:border-red-400/40 transition-colors"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-100 hover:border-red-300 transition-colors"
         >
           <div className="text-lg mb-1">🗑️</div>
           <div>Clear All</div>

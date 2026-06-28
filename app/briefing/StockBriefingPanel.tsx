@@ -37,13 +37,13 @@ function daysFromToday(dateStr: string | null): number | null {
 }
 
 function daysBadge(days: number | null) {
-  if (days == null) return <span className="text-slate-400">—</span>;
+  if (days == null) return <span className="text-zinc-500">—</span>;
 
   const clamped = Math.max(0, Math.round(days));
-  let color = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-  if (clamped <= 7) color = "bg-red-500/15 text-red-300 border-red-500/30";
+  let color = "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (clamped <= 7) color = "bg-red-50 text-red-700 border-red-200";
   else if (clamped <= 30)
-    color = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    color = "bg-amber-50 text-amber-700 border-amber-200";
 
   return (
     <span
@@ -57,10 +57,10 @@ function daysBadge(days: number | null) {
 
 function orderByClass(orderByDate: string | null) {
   const diff = daysFromToday(orderByDate);
-  if (diff == null) return "text-slate-200";
+  if (diff == null) return "text-zinc-800";
   if (diff < 0) return "text-red-300";
-  if (diff <= 7) return "text-amber-200";
-  return "text-slate-200";
+  if (diff <= 7) return "text-amber-700";
+  return "text-zinc-800";
 }
 
 function briefingRowSignals(row: BriefingTopReorder, todayYmd: string) {
@@ -97,25 +97,25 @@ export default function StockBriefingPanel({
 
   return (
     <section
-      className={`rounded-2xl border p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] space-y-4 ${
+      className={`rounded-2xl border p-5 shadow-sm space-y-4 ${
         hasPressure
-          ? "border-amber-500/35 bg-gradient-to-br from-amber-500/[0.12] to-slate-900/60"
-          : "border-slate-800/80 bg-slate-900/60"
+          ? "border-amber-500/35 bg-gradient-to-br from-amber-50 to-white"
+          : "border-zinc-200 bg-zinc-50"
       }`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-50">Today&apos;s stock briefing</h2>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <h2 className="text-lg font-semibold text-zinc-900">Today&apos;s stock briefing</h2>
+          <p className="text-sm text-zinc-500 mt-0.5">
             How much you have left, what to order, and which products sell best — from your live stock
             and sales data.
           </p>
-          <p className="text-xs text-slate-500 mt-1">{briefing.dateLabel}</p>
-          <p className="text-xs text-emerald-200/80 mt-1 font-medium">View: {scope}</p>
+          <p className="text-xs text-zinc-500 mt-1">{briefing.dateLabel}</p>
+          <p className="text-xs text-emerald-700/80 mt-1 font-medium">View: {scope}</p>
         </div>
         <Link
           href={shop === "all" ? "/buying-list" : `/buying-list?shop=${shop}`}
-          className="shrink-0 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-500/90 px-4 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+          className="shrink-0 inline-flex h-10 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-500"
         >
           Open buying list
         </Link>
@@ -124,19 +124,19 @@ export default function StockBriefingPanel({
       <AirtableBriefingTools variant="compact" />
 
       {baselineDelta ? (
-        <div className="rounded-xl border border-cyan-500/25 bg-cyan-950/20 px-3 py-2.5 text-xs text-cyan-100/90 space-y-1.5">
-          <p className="font-semibold text-cyan-200/95">
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2.5 text-xs text-cyan-900 space-y-1.5">
+          <p className="font-semibold text-cyan-800">
             Change since last Airtable snapshot ({formatDate(baselineDelta.previousSnapshotYmd)})
           </p>
-          <ul className="list-disc pl-4 space-y-0.5 text-cyan-100/80">
+          <ul className="list-disc pl-4 space-y-0.5 text-cyan-800/90">
             {baselineDelta.lines.map((line, i) => (
               <li key={i}>{line}</li>
             ))}
           </ul>
-          <p className="text-[10px] text-slate-500 pt-0.5">
+          <p className="text-[10px] text-zinc-500 pt-0.5">
             Snapshots update when the cron runs or when you use &quot;Save briefing snapshot&quot;
             above. Env:{' '}
-            <code className="text-slate-400">AIRTABLE_BRIEFING_BASELINE_*</code>.
+            <code className="text-zinc-500">AIRTABLE_BRIEFING_BASELINE_*</code>.
           </p>
         </div>
       ) : null}
@@ -156,39 +156,39 @@ export default function StockBriefingPanel({
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-red-400/25 bg-red-500/5 p-3 text-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-red-200/80">
+          <p className="text-xs font-medium uppercase tracking-wide text-red-700/80">
             Within a week of running out
           </p>
-          <p className="mt-1 text-2xl font-semibold text-red-100">{briefing.critical0to7}</p>
-          <p className="text-xs text-slate-500 mt-0.5">Products — needs attention first</p>
+          <p className="mt-1 text-2xl font-semibold text-red-800">{briefing.critical0to7}</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Products — needs attention first</p>
         </div>
         <div className="rounded-xl border border-amber-400/25 bg-amber-500/5 p-3 text-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-amber-200/80">
+          <p className="text-xs font-medium uppercase tracking-wide text-amber-700/80">
             About 1–2 weeks of stock
           </p>
-          <p className="mt-1 text-2xl font-semibold text-amber-100">{briefing.urgent8to14}</p>
-          <p className="text-xs text-slate-500 mt-0.5">Products — plan orders soon</p>
+          <p className="mt-1 text-2xl font-semibold text-amber-800">{briefing.urgent8to14}</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Products — plan orders soon</p>
         </div>
-        <div className="rounded-xl border border-slate-600/40 bg-slate-800/40 p-3 text-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Buying list</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-50">
+        <div className="rounded-xl border border-zinc-300/60 bg-zinc-200/40 p-3 text-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Buying list</p>
+          <p className="mt-1 text-2xl font-semibold text-zinc-900">
             {briefing.reorderSkuCount}{" "}
-            <span className="text-base font-normal text-slate-400">products</span>
+            <span className="text-base font-normal text-zinc-500">products</span>
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             ~{briefing.totalUnitsToOrder.toLocaleString("en-GB")} units suggested (based on stock
             and how fast things sell)
           </p>
           {briefing.reorderOrderValueEur > 0 || briefing.reorderOrderValueUsd > 0 ? (
-            <p className="text-xs text-emerald-200/90 mt-1 font-medium tabular-nums">
+            <p className="text-xs text-emerald-700/90 mt-1 font-medium tabular-nums">
               ~
               {formatReorderTotalsEurUsd(
                 briefing.reorderOrderValueEur,
                 briefing.reorderOrderValueUsd
               )}{" "}
-              <span className="text-slate-500 font-normal">(supplier currency, not £)</span>
+              <span className="text-zinc-500 font-normal">(supplier currency, not £)</span>
               {briefing.reorderSkusWithoutUnitPrice > 0 ? (
-                <span className="text-slate-500 font-normal">
+                <span className="text-zinc-500 font-normal">
                   {" "}
                   (+{briefing.reorderSkusWithoutUnitPrice} SKU
                   {briefing.reorderSkusWithoutUnitPrice !== 1 ? "s" : ""} missing unit price)
@@ -198,20 +198,20 @@ export default function StockBriefingPanel({
           ) : null}
         </div>
         <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3 text-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-emerald-200/80">
+          <p className="text-xs font-medium uppercase tracking-wide text-emerald-700/80">
             Suggested order dates
           </p>
           {briefing.reorderSkuCount === 0 ? (
-            <p className="mt-1 text-lg font-semibold text-slate-400">—</p>
+            <p className="mt-1 text-lg font-semibold text-zinc-500">—</p>
           ) : briefing.reorderQueueHasOverdueOrderBy ? (
             <>
-              <p className="mt-1 text-lg font-semibold text-amber-200">Some dates are already past</p>
+              <p className="mt-1 text-lg font-semibold text-amber-700">Some dates are already past</p>
               {briefing.soonestFutureOrderByIso ? (
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Next target date from today: {formatDate(briefing.soonestFutureOrderByIso)}
                 </p>
               ) : (
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   All suggested dates are before today — work the list from the oldest dates upward.
                 </p>
               )}
@@ -223,37 +223,37 @@ export default function StockBriefingPanel({
               {formatDate(briefing.soonestFutureOrderByIso)}
             </p>
           )}
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             Allows time for delivery before you’d run out
           </p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-700/60 bg-slate-950/40 overflow-hidden">
-        <div className="px-3 py-2 border-b border-slate-800/80">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <div className="rounded-xl border border-zinc-300 bg-zinc-50 overflow-hidden">
+        <div className="px-3 py-2 border-b border-zinc-200">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
             {`Buying list (${briefing.topReorders.length} product${
               briefing.topReorders.length === 1 ? "" : "s"
             })`}
           </h3>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          <p className="mt-0.5 text-[11px] text-zinc-500">
             Sorted by suggested order date (earliest first).{" "}
-            <strong className="text-slate-400">Late</strong> means that date has already passed — treat
+            <strong className="text-zinc-500">Late</strong> means that date has already passed — treat
             those lines first. Several products may share one date when delivery time and stock line
-            up. <strong className="text-slate-400">Days left</strong> is a rough “how long until empty”
+            up. <strong className="text-zinc-500">Days left</strong> is a rough “how long until empty”
             at today’s sales pace; it can still show a few days even when the order date is late, if
             delivery usually takes longer than that.
           </p>
         </div>
         {briefing.topReorders.length === 0 ? (
-          <p className="px-3 py-6 text-sm text-slate-500 text-center">
+          <p className="px-3 py-6 text-sm text-zinc-500 text-center">
             Nothing on the buying list for this view.
           </p>
         ) : (
           <div className="max-h-[min(70vh,56rem)] overflow-auto overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-500 border-b border-slate-800/80">
+                <tr className="text-left text-xs text-zinc-500 border-b border-zinc-200">
                   <th className="px-3 py-2 font-medium">Product</th>
                   <th className="px-3 py-2 font-medium text-right">Qty to order</th>
                   <th className="px-3 py-2 font-medium text-right hidden sm:table-cell">Unit</th>
@@ -272,8 +272,8 @@ export default function StockBriefingPanel({
                 {briefing.topReorders.map((r) => {
                   const sig = briefingRowSignals(r, briefing.todayYmd);
                   return (
-                  <tr key={r.id} className="border-b border-slate-800/50 last:border-0">
-                    <td className="px-3 py-2 text-slate-100">
+                  <tr key={r.id} className="border-b border-zinc-200/50 last:border-0">
+                    <td className="px-3 py-2 text-zinc-900">
                       <span className="inline-flex flex-wrap items-center gap-1.5">
                         <span>{r.name}</span>
                         {sig.snoozed ? (
@@ -294,24 +294,24 @@ export default function StockBriefingPanel({
                         ) : null}
                       </span>
                       {r.brand ? (
-                        <span className="block text-xs text-slate-500">{r.brand}</span>
+                        <span className="block text-xs text-zinc-500">{r.brand}</span>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-200">{r.qtyToOrder}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-400 hidden sm:table-cell">
+                    <td className="px-3 py-2 text-right tabular-nums text-zinc-800">{r.qtyToOrder}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-zinc-500 hidden sm:table-cell">
                       {formatMoneyOptional(r.pricePerUnit, r.purchaseCurrency)}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-200 hidden sm:table-cell">
+                    <td className="px-3 py-2 text-right tabular-nums text-zinc-800 hidden sm:table-cell">
                       {formatMoneyOptional(
                         r.pricePerUnit != null ? r.qtyToOrder * r.pricePerUnit : null,
                         r.purchaseCurrency
                       )}
                     </td>
-                    <td className="px-3 py-2 text-slate-300">
+                    <td className="px-3 py-2 text-zinc-600">
                       {r.orderByDate && r.orderByDate < briefing.todayYmd ? (
                         <div>
-                          <span className="text-amber-200 font-medium">Late</span>
-                          <span className="block text-[11px] text-slate-500 tabular-nums">
+                          <span className="text-amber-700 font-medium">Late</span>
+                          <span className="block text-[11px] text-zinc-500 tabular-nums">
                             Was due {formatDate(r.orderByDate)}
                           </span>
                         </div>

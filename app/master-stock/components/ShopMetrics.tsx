@@ -67,37 +67,37 @@ export default function ShopMetrics({ products, allocations, activeShops }: Prop
   shopMetrics.sort((a, b) => b.totalAllocated - a.totalAllocated);
 
   return (
-    <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-      <h2 className="text-lg font-semibold text-slate-200 mb-4">Shop Performance</h2>
+    <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-zinc-800 mb-4">Shop Performance</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {shopMetrics.map(({ shop, totalAllocated, avgDays, fastestConsuming }) => (
           <div
             key={shop.id}
-            className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-4"
+            className="rounded-xl border border-zinc-300 bg-white p-4"
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-200">{shop.name}</h3>
-              <span className="text-xs text-slate-500 bg-slate-800/60 px-2 py-1 rounded-full">
+              <h3 className="text-sm font-semibold text-zinc-800">{shop.name}</h3>
+              <span className="text-xs text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
                 {shop.dailyDemand}/day
               </span>
             </div>
             <div className="space-y-2">
               <div>
-                <p className="text-xs text-slate-400 mb-1">Total Allocated</p>
-                <p className="text-xl font-bold text-emerald-300 tabular-nums">
+                <p className="text-xs text-zinc-500 mb-1">Total Allocated</p>
+                <p className="text-xl font-bold text-indigo-600 tabular-nums">
                   {totalAllocated}
                 </p>
               </div>
               {avgDays != null && (
                 <div>
-                  <p className="text-xs text-slate-400 mb-1">Avg Days Coverage</p>
-                  <p className="text-lg font-semibold text-slate-200 tabular-nums">
+                  <p className="text-xs text-zinc-500 mb-1">Avg Days Coverage</p>
+                  <p className="text-lg font-semibold text-zinc-800 tabular-nums">
                     {Math.round(avgDays)}d
                   </p>
                 </div>
               )}
               {fastestConsuming != null && fastestConsuming <= 7 && (
-                <div className="pt-2 border-t border-slate-800/60">
+                <div className="pt-2 border-t border-zinc-200">
                   <p className="text-xs text-red-400 mb-1">⚠️ Fastest consuming</p>
                   <p className="text-sm font-semibold text-red-300 tabular-nums">
                     {Math.round(fastestConsuming)}d

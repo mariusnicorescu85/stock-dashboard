@@ -68,15 +68,15 @@ export default async function BriefingPage({
       : null;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen text-zinc-900">
       <div className="mx-auto max-w-[90rem] px-4 py-10 space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/80">Ops Control</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-indigo-600">Ops Control</p>
             <h1 className="text-3xl font-semibold leading-tight">Stock briefing</h1>
-            <p className="text-sm text-slate-400 max-w-xl">
+            <p className="text-sm text-zinc-500 max-w-xl">
               See what’s running low, what to order, and how your best sellers are doing — for{" "}
-              <span className="text-slate-200">{shopFilterLabel(shop)}</span> or the whole business.
+              <span className="text-zinc-800">{shopFilterLabel(shop)}</span> or the whole business.
               Pick a shop below or leave it on “all”.
             </p>
           </div>
@@ -84,13 +84,13 @@ export default async function BriefingPage({
             <BriefingShopSelect shop={shop} />
             <Link
               href={`/monitor${shop !== "all" ? `?shop=${shop}` : ""}`}
-              className="inline-flex h-10 items-center rounded-xl border border-teal-600/55 bg-teal-500/10 px-3 text-sm font-medium text-teal-200 hover:bg-teal-500/16"
+              className="inline-flex h-10 items-center rounded-xl border border-indigo-300 bg-indigo-50 px-3 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
             >
               Action monitor
             </Link>
             <Link
               href="/"
-              className="inline-flex h-10 items-center rounded-xl border border-slate-600 bg-slate-900/60 px-3 text-sm text-slate-200 hover:bg-slate-800/80"
+              className="inline-flex h-10 items-center rounded-xl border border-zinc-300 bg-zinc-50 px-3 text-sm text-zinc-800 hover:bg-zinc-100"
             >
               ← Dashboard
             </Link>

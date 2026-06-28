@@ -100,15 +100,15 @@ function MonthlyModeToggle(props: {
     "rounded-lg border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60";
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-slate-500">Monthly view:</span>
-      <div className="inline-flex rounded-lg border border-slate-700 bg-slate-950/80 p-0.5">
+      <span className="text-xs text-zinc-500">Monthly view:</span>
+      <div className="inline-flex rounded-lg border border-zinc-300 bg-zinc-50 p-0.5">
         <button
           type="button"
           onClick={() => onChange("units")}
           className={`${base} border-transparent ${
             mode === "units"
-              ? "bg-emerald-500/20 text-emerald-100"
-              : "text-slate-400 hover:text-slate-200"
+              ? "bg-emerald-500/20 text-emerald-800"
+              : "text-zinc-500 hover:text-zinc-800"
           }`}
         >
           Units sold
@@ -118,14 +118,14 @@ function MonthlyModeToggle(props: {
           onClick={() => onChange("daily")}
           className={`${base} border-transparent ${
             mode === "daily"
-              ? "bg-emerald-500/20 text-emerald-100"
-              : "text-slate-400 hover:text-slate-200"
+              ? "bg-emerald-500/20 text-emerald-800"
+              : "text-zinc-500 hover:text-zinc-800"
           }`}
         >
           Implied daily
         </button>
       </div>
-      <span className="text-[11px] text-slate-500">
+      <span className="text-[11px] text-zinc-500">
         “Implied daily” = that month&apos;s units ÷ calendar days (sales-based).
       </span>
     </div>
@@ -189,13 +189,13 @@ function MonthCells(props: {
           <td
             key={mi}
             className={`px-1.5 py-2 text-right text-xs tabular-nums ${
-              muted ? "text-slate-600" : "text-slate-200"
+              muted ? "text-zinc-500" : "text-zinc-800"
             } ${
               clickable
                 ? `cursor-pointer transition ${
                     inBasket
-                      ? "bg-emerald-500/20 ring-1 ring-inset ring-emerald-400/50 text-emerald-100"
-                      : "hover:bg-slate-800/80"
+                      ? "bg-emerald-500/20 ring-1 ring-inset ring-emerald-400/50 text-emerald-800"
+                      : "hover:bg-zinc-100"
                   }`
                 : ""
             }`}
@@ -273,12 +273,12 @@ function MonthlyTable(props: {
 
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-medium text-slate-200">{label}</h4>
-      <div className="overflow-x-auto rounded-xl border border-slate-800/80 bg-slate-950/70">
+      <h4 className="text-sm font-medium text-zinc-800">{label}</h4>
+      <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
         <table className="min-w-[900px] w-full text-sm">
-          <thead className="bg-slate-950/80 text-xs uppercase text-slate-400">
+          <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
             <tr>
-              <th className="sticky left-0 z-10 bg-slate-950/95 px-3 py-2 text-left shadow-[4px_0_12px_rgba(0,0,0,0.35)]">
+              <th className="sticky left-0 z-10 bg-white/95 px-3 py-2 text-left shadow-[4px_0_12px_rgba(0,0,0,0.35)]">
                 Product
               </th>
               <th className="px-3 py-2 text-left">Brand</th>
@@ -300,7 +300,7 @@ function MonthlyTable(props: {
               >
                 Avg /day
                 <br />
-                <span className="normal-case text-[10px] font-normal text-slate-500">
+                <span className="normal-case text-[10px] font-normal text-zinc-500">
                   from sales
                 </span>
               </th>
@@ -310,7 +310,7 @@ function MonthlyTable(props: {
               >
                 Sheet
                 <br />
-                <span className="normal-case text-[10px] font-normal text-slate-500">
+                <span className="normal-case text-[10px] font-normal text-zinc-500">
                   daily
                 </span>
               </th>
@@ -324,20 +324,20 @@ function MonthlyTable(props: {
               return (
                 <tr
                   key={row.id}
-                  className="border-t border-slate-900/70 odd:bg-slate-900/40 even:bg-slate-900/20"
+                  className="border-t border-zinc-100 odd:bg-zinc-50 even:bg-white"
                 >
-                  <td className="sticky left-0 z-[1] border-r border-slate-800/80 bg-slate-950/90 px-3 py-2 backdrop-blur-sm odd:bg-slate-900/90 even:bg-slate-900/80">
+                  <td className="sticky left-0 z-[1] border-r border-zinc-200 bg-white px-3 py-2 backdrop-blur-sm odd:bg-zinc-50/90 even:bg-zinc-100">
                     <Link
                       href={`/product/${row.id}`}
-                      className="text-slate-100 hover:underline"
+                      className="text-zinc-900 hover:underline"
                     >
                       {row.name}
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-slate-400">
+                  <td className="px-3 py-2 text-zinc-500">
                     {row.brand ?? "—"}
                   </td>
-                  <td className="px-2 py-2 text-right tabular-nums text-slate-100">
+                  <td className="px-2 py-2 text-right tabular-nums text-zinc-900">
                     {uTot}
                   </td>
                   <MonthCells
@@ -352,10 +352,10 @@ function MonthlyTable(props: {
                     basketEnabled={basketEnabled}
                     onToggleBasket={onToggleBasket}
                   />
-                  <td className="px-2 py-2 text-right text-xs tabular-nums text-emerald-200/90">
+                  <td className="px-2 py-2 text-right text-xs tabular-nums text-emerald-700/90">
                     {fmtDemandRate(avgDay)}
                   </td>
-                  <td className="px-2 py-2 text-right text-xs tabular-nums text-slate-300">
+                  <td className="px-2 py-2 text-right text-xs tabular-nums text-zinc-600">
                     {fmtDemandRate(row.sheetDaily)}
                   </td>
                 </tr>
@@ -363,14 +363,14 @@ function MonthlyTable(props: {
             })}
           </tbody>
           <tfoot>
-            <tr className="border-t border-slate-700 bg-slate-900/80 text-xs text-slate-200">
+            <tr className="border-t border-zinc-300 bg-zinc-100 text-xs text-zinc-800">
               <td
                 colSpan={2}
-                className="sticky left-0 z-[1] bg-slate-900/95 px-3 py-2 text-left font-medium shadow-[4px_0_12px_rgba(0,0,0,0.35)]"
+                className="sticky left-0 z-[1] bg-zinc-50/95 px-3 py-2 text-left font-medium shadow-[4px_0_12px_rgba(0,0,0,0.35)]"
               >
                 Category total
               </td>
-              <td className="px-2 py-2 text-right font-semibold tabular-nums text-emerald-200">
+              <td className="px-2 py-2 text-right font-semibold tabular-nums text-emerald-700">
                 {totalUnits}
               </td>
               {MONTH_SHORT.map((m, mi) => {
@@ -392,20 +392,20 @@ function MonthlyTable(props: {
                     key={m}
                     className={`px-1.5 py-2 text-right font-medium tabular-nums ${
                       mode === "units" && colSum === 0
-                        ? "text-slate-500"
-                        : "text-slate-200"
+                        ? "text-zinc-500"
+                        : "text-zinc-800"
                     }`}
                   >
                     {show}
                   </td>
                 );
               })}
-              <td className="px-2 py-2 text-right font-medium tabular-nums text-emerald-200/90">
+              <td className="px-2 py-2 text-right font-medium tabular-nums text-emerald-700/90">
                 {fmtDemandRate(
                   totalUnits > 0 ? totalUnits / daysInCalYear : 0
                 )}
               </td>
-              <td className="px-2 py-2 text-right font-medium tabular-nums text-slate-300">
+              <td className="px-2 py-2 text-right font-medium tabular-nums text-zinc-600">
                 {fmtDemandRate(
                   block.items.reduce((s, r) => s + r.sheetDaily, 0)
                 )}
@@ -570,8 +570,8 @@ export default function CategoriesTabs(props: Props) {
         onClick={() => setTab(id)}
         className={`rounded-lg border px-4 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 ${
           active
-            ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-100"
-            : "border-slate-700 bg-slate-900/70 text-slate-300 hover:border-slate-600 hover:text-slate-100"
+            ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-800"
+            : "border-zinc-300 bg-zinc-50 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
         }`}
       >
         {label}
@@ -608,7 +608,7 @@ export default function CategoriesTabs(props: Props) {
         onDownloadBasket={downloadBasket}
       />
 
-      <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
+      <p className="text-xs uppercase tracking-[0.15em] text-zinc-500">
         Layout
       </p>
       <div
@@ -630,26 +630,26 @@ export default function CategoriesTabs(props: Props) {
             return (
             <div
               key={block.id}
-              className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.4)] space-y-4"
+              className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.4)] space-y-4"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
                     Category
                   </p>
                   <h2 className="text-lg font-semibold">{block.label}</h2>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className="mt-1 text-sm text-zinc-500">
                     {block.description}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">
                     Units sold {primaryYear}
                   </p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-300">
+                  <p className="mt-1 text-2xl font-semibold tabular-nums text-indigo-600">
                     {primaryTotalForBlock(block)}
                   </p>
-                  <p className="text-xs text-slate-500 max-w-xs text-right">
+                  <p className="text-xs text-zinc-500 max-w-xs text-right">
                     {block.totalsByYear
                       .filter((t) => t.year !== primaryYear)
                       .map((t) => `${t.year}: ${t.total}`)
@@ -673,9 +673,9 @@ export default function CategoriesTabs(props: Props) {
                 />
               )}
 
-              <div className="overflow-x-auto rounded-xl border border-slate-800/80 bg-slate-950/70">
+              <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
                 <table className="min-w-[720px] w-full text-sm">
-                  <thead className="bg-slate-950/80 text-xs uppercase text-slate-400">
+                  <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
                     <tr>
                       <th className="px-2 py-2 text-left w-10">
                         <input
@@ -687,7 +687,7 @@ export default function CategoriesTabs(props: Props) {
                           checked={blockAllSelected}
                           onChange={() => toggleBlockProducts(block)}
                           aria-label={`Select all in ${block.label}`}
-                          className="size-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                          className="size-4 rounded border-zinc-300 bg-zinc-50 text-emerald-8000 focus:ring-emerald-500/40 focus:ring-offset-0"
                         />
                       </th>
                       <th className="px-3 py-2 text-left">Product</th>
@@ -703,7 +703,7 @@ export default function CategoriesTabs(props: Props) {
                       >
                         Avg /day
                         <br />
-                        <span className="normal-case text-[10px] font-normal text-slate-500">
+                        <span className="normal-case text-[10px] font-normal text-zinc-500">
                           {primaryYear} sales
                         </span>
                       </th>
@@ -738,7 +738,7 @@ export default function CategoriesTabs(props: Props) {
                         return (
                           <tr
                             key={row.id}
-                            className={`border-t border-slate-900/70 odd:bg-slate-900/40 even:bg-slate-900/20 ${
+                            className={`border-t border-zinc-100 odd:bg-zinc-50 even:bg-white ${
                               isSelected ? "" : "opacity-55"
                             }`}
                           >
@@ -748,18 +748,18 @@ export default function CategoriesTabs(props: Props) {
                                 checked={isSelected}
                                 onChange={() => toggleProduct(row.id)}
                                 aria-label={`Include ${row.name} in quick export`}
-                                className="size-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                                className="size-4 rounded border-zinc-300 bg-zinc-50 text-emerald-8000 focus:ring-emerald-500/40 focus:ring-offset-0"
                               />
                             </td>
                             <td className="px-3 py-2">
                               <Link
                                 href={`/product/${row.id}`}
-                                className="text-slate-100 hover:underline"
+                                className="text-zinc-900 hover:underline"
                               >
                                 {row.name}
                               </Link>
                             </td>
-                            <td className="px-3 py-2 text-slate-400">
+                            <td className="px-3 py-2 text-zinc-500">
                               {row.brand ?? "—"}
                             </td>
                             {historyYearsAsc.map((y) => {
@@ -769,18 +769,18 @@ export default function CategoriesTabs(props: Props) {
                                   key={y}
                                   className={`px-3 py-2 text-right tabular-nums ${
                                     y === primaryYear
-                                      ? "text-slate-100"
-                                      : "text-slate-400"
+                                      ? "text-zinc-900"
+                                      : "text-zinc-500"
                                   }`}
                                 >
                                   {sl.totalUnits}
                                 </td>
                               );
                             })}
-                            <td className="px-3 py-2 text-right text-xs tabular-nums text-emerald-200/90">
+                            <td className="px-3 py-2 text-right text-xs tabular-nums text-emerald-700/90">
                               {fmtDemandRate(yearlyDaily)}
                             </td>
-                            <td className="px-3 py-2 text-right text-xs tabular-nums text-slate-300">
+                            <td className="px-3 py-2 text-right text-xs tabular-nums text-zinc-600">
                               {fmtDemandRate(row.sheetDaily)}
                             </td>
                             {!block.hideStockRunoutColumns && (
@@ -801,7 +801,7 @@ export default function CategoriesTabs(props: Props) {
                                 <td className="px-3 py-2 text-right tabular-nums">
                                   {row.orderBy ?? "—"}
                                 </td>
-                                <td className="px-3 py-2 text-right tabular-nums font-bold text-emerald-200">
+                                <td className="px-3 py-2 text-right tabular-nums font-bold text-emerald-700">
                                   {row.qtyToOrder}
                                 </td>
                               </>
@@ -820,22 +820,22 @@ export default function CategoriesTabs(props: Props) {
 
       {tab === "monthly" && (
         <div className="space-y-6">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-            <p className="text-sm text-slate-300">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <p className="text-sm text-zinc-600">
               One table per calendar year in range{" "}
-              <strong className="text-slate-100">
+              <strong className="text-zinc-900">
                 {historyYearsAsc[0]}–{primaryYear}
               </strong>{" "}
               (newest first below). Month-by-month{" "}
-              <strong className="text-slate-100">units sold</strong> from your
+              <strong className="text-zinc-900">units sold</strong> from your
               Monthly Sales tables, plus{" "}
-              <strong className="text-slate-100">implied daily</strong> (that
+              <strong className="text-zinc-900">implied daily</strong> (that
               month&apos;s units ÷ days in the month).{" "}
-              <strong className="text-slate-100">Sheet daily</strong> is the
+              <strong className="text-zinc-900">Sheet daily</strong> is the
               current forecast from each product row.
             </p>
-            <p className="mt-2 text-xs text-emerald-300/80">
-              Export basket: switch to <strong className="text-emerald-100">Units sold</strong>{" "}
+            <p className="mt-2 text-xs text-indigo-600">
+              Export basket: switch to <strong className="text-emerald-800">Units sold</strong>{" "}
               and click individual month cells to add or remove slices from your basket.
             </p>
             <div className="mt-4">
@@ -846,13 +846,13 @@ export default function CategoriesTabs(props: Props) {
           {blocks.map((block) => (
             <div
               key={block.id}
-              className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.4)] space-y-6"
+              className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.4)] space-y-6"
             >
               <div>
-                <h3 className="text-lg font-semibold text-slate-100">
+                <h3 className="text-lg font-semibold text-zinc-900">
                   {block.label}
                 </h3>
-                <p className="text-sm text-slate-400">{block.description}</p>
+                <p className="text-sm text-zinc-500">{block.description}</p>
               </div>
 
               {yearsNewestFirst.map((calYear) => (

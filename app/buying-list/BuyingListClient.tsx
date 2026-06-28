@@ -261,7 +261,7 @@ export default function BuyingListClient({
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-800/80 bg-slate-900/40 p-8 text-center text-slate-400 text-sm">
+      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 text-center text-zinc-500 text-sm">
         Nothing on the buying list for this shop view. Try another shop or check the main dashboard.
       </div>
     );
@@ -272,12 +272,12 @@ export default function BuyingListClient({
       <AirtableBriefingTools variant="compact" />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-400">
-          <span className="text-slate-200 font-medium tabular-nums">{selectedMerged.length}</span> of{" "}
-          <span className="text-slate-200 font-medium tabular-nums">{merged.length}</span> selected ·{" "}
-          <span className="text-emerald-200/90 font-semibold tabular-nums">{totalUnits}</span> units
+        <p className="text-sm text-zinc-500">
+          <span className="text-zinc-800 font-medium tabular-nums">{selectedMerged.length}</span> of{" "}
+          <span className="text-zinc-800 font-medium tabular-nums">{merged.length}</span> selected ·{" "}
+          <span className="text-emerald-700/90 font-semibold tabular-nums">{totalUnits}</span> units
           {noneSelected ? (
-            <span className="text-amber-200/90"> — tick rows to export</span>
+            <span className="text-amber-700/90"> — tick rows to export</span>
           ) : (
             " (selected, after qty edits)"
           )}
@@ -285,12 +285,12 @@ export default function BuyingListClient({
             <>
               {" "}
               ·{" "}
-              <span className="text-amber-100/90 font-semibold tabular-nums">
+              <span className="text-amber-800/90 font-semibold tabular-nums">
                 {formatReorderTotalsEurUsd(totalValueEur, totalValueUsd)}
               </span>{" "}
-              <span className="text-slate-500 font-normal">(not £)</span>
+              <span className="text-zinc-500 font-normal">(not £)</span>
               {linesMissingPrice > 0 ? (
-                <span className="text-slate-500 font-normal">
+                <span className="text-zinc-500 font-normal">
                   {" "}
                   (+{linesMissingPrice} without unit price)
                 </span>
@@ -303,7 +303,7 @@ export default function BuyingListClient({
             type="button"
             onClick={downloadCsv}
             disabled={noneSelected}
-            className="h-10 inline-flex items-center justify-center rounded-xl border border-slate-600 bg-slate-900/70 px-4 text-sm font-medium text-slate-100 hover:bg-slate-800/90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-10 inline-flex items-center justify-center rounded-xl border border-zinc-300 bg-zinc-50 px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-200/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Download CSV
           </button>
@@ -311,21 +311,21 @@ export default function BuyingListClient({
             type="button"
             onClick={openGmailWithCsv}
             disabled={noneSelected}
-            className="h-10 inline-flex items-center justify-center rounded-xl bg-emerald-500/90 px-4 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-10 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Draft in Gmail
           </button>
           {mailtoHref ? (
             <a
               href={mailtoHref}
-              className="h-10 inline-flex items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/50 px-3 text-sm font-medium text-slate-300 hover:bg-slate-800/70"
+              className="h-10 inline-flex items-center justify-center rounded-xl border border-zinc-300/80 bg-zinc-50 px-3 text-sm font-medium text-zinc-600 hover:bg-zinc-200/70"
             >
               Other mail app
             </a>
           ) : (
             <span
               aria-disabled="true"
-              className="h-10 inline-flex items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/50 px-3 text-sm font-medium text-slate-300 opacity-40 cursor-not-allowed"
+              className="h-10 inline-flex items-center justify-center rounded-xl border border-zinc-300/80 bg-zinc-50 px-3 text-sm font-medium text-zinc-600 opacity-40 cursor-not-allowed"
             >
               Other mail app
             </span>
@@ -333,10 +333,10 @@ export default function BuyingListClient({
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-800/80 bg-slate-900/30 px-4 py-3 space-y-2">
-        <p className="text-xs text-slate-500">
-          Send from server via Gmail SMTP (needs <span className="text-slate-400">GMAIL_USER</span> +{" "}
-          <span className="text-slate-400">GMAIL_APP_PASSWORD</span> on Vercel / <span className="text-slate-400">.env.local</span>
+      <div className="rounded-xl border border-zinc-200 bg-zinc-50/30 px-4 py-3 space-y-2">
+        <p className="text-xs text-zinc-500">
+          Send from server via Gmail SMTP (needs <span className="text-zinc-500">GMAIL_USER</span> +{" "}
+          <span className="text-zinc-500">GMAIL_APP_PASSWORD</span> on Vercel / <span className="text-zinc-500">.env.local</span>
           ). You must be signed in.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -346,29 +346,29 @@ export default function BuyingListClient({
             onChange={(e) => setSmtpTo(e.target.value)}
             placeholder="Recipient (optional if server sets BUYING_LIST_EMAIL_TO)"
             autoComplete="email"
-            className="h-10 w-full sm:w-72 rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+            className="h-10 w-full sm:w-72 rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
           />
           <button
             type="button"
             disabled={smtpBusy || noneSelected}
             onClick={sendViaGmailSmtp}
-            className="h-10 inline-flex items-center justify-center rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 text-sm font-semibold text-amber-100 hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-10 inline-flex items-center justify-center rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {smtpBusy ? "Sending…" : "Email CSV (SMTP)"}
           </button>
         </div>
         {smtpMessage ? (
           <p
-            className={`text-xs ${smtpMessage.startsWith("Sent.") ? "text-emerald-300/90" : "text-rose-300/90"}`}
+            className={`text-xs ${smtpMessage.startsWith("Sent.") ? "text-indigo-600" : "text-rose-300/90"}`}
           >
             {smtpMessage}
           </p>
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 shadow-[0_20px_70px_rgba(0,0,0,0.45)] overflow-x-auto">
+      <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-slate-950/90 text-[11px] uppercase text-slate-400 border-b border-slate-800/60">
+          <thead className="sticky top-0 z-10 bg-white text-[11px] uppercase text-zinc-500 border-b border-zinc-200">
             <tr>
               <th className="px-3 py-3 text-left w-10">
                 <input
@@ -377,7 +377,7 @@ export default function BuyingListClient({
                   checked={allSelected}
                   onChange={toggleAll}
                   aria-label={allSelected ? "Clear all products" : "Select all products"}
-                  className="size-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                  className="size-4 rounded border-zinc-300 bg-zinc-50 text-emerald-8000 focus:ring-emerald-500/40 focus:ring-offset-0"
                 />
               </th>
               <th className="px-4 py-3 text-left">Product</th>
@@ -396,7 +396,7 @@ export default function BuyingListClient({
               return (
               <tr
                 key={r.id}
-                className={`border-t border-slate-900/60 odd:bg-slate-900/40 even:bg-slate-900/20 ${
+                className={`border-t border-zinc-100 odd:bg-zinc-50 even:bg-white ${
                   isSelected ? "" : "opacity-55"
                 }`}
               >
@@ -406,12 +406,12 @@ export default function BuyingListClient({
                     checked={isSelected}
                     onChange={() => toggleRow(r.id)}
                     aria-label={`Include ${r.name} in export`}
-                    className="size-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                    className="size-4 rounded border-zinc-300 bg-zinc-50 text-emerald-8000 focus:ring-emerald-500/40 focus:ring-offset-0"
                   />
                 </td>
-                <td className="px-4 py-3 text-slate-100 font-medium">{r.name}</td>
-                <td className="px-4 py-3 text-slate-400 hidden sm:table-cell">{r.brand ?? "—"}</td>
-                <td className="px-4 py-3 text-slate-300 tabular-nums">{formatOrderByForCsv(r.orderByDate)}</td>
+                <td className="px-4 py-3 text-zinc-900 font-medium">{r.name}</td>
+                <td className="px-4 py-3 text-zinc-500 hidden sm:table-cell">{r.brand ?? "—"}</td>
+                <td className="px-4 py-3 text-zinc-600 tabular-nums">{formatOrderByForCsv(r.orderByDate)}</td>
                 <td className="px-4 py-3 text-right">
                   <input
                     type="number"
@@ -419,13 +419,13 @@ export default function BuyingListClient({
                     step={1}
                     value={qtyById[r.id] ?? 0}
                     onChange={(e) => setQty(r.id, e.target.value)}
-                    className="w-full max-w-[7rem] ml-auto rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-right tabular-nums text-emerald-200 font-semibold focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
+                    className="w-full max-w-[7rem] ml-auto rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-1.5 text-right tabular-nums text-emerald-700 font-semibold focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
                   />
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-slate-400 hidden lg:table-cell">
+                <td className="px-4 py-3 text-right tabular-nums text-zinc-500 hidden lg:table-cell">
                   {formatMoneyOptional(r.pricePerUnit, r.purchaseCurrency)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-slate-200 font-medium hidden lg:table-cell">
+                <td className="px-4 py-3 text-right tabular-nums text-zinc-800 font-medium hidden lg:table-cell">
                   {formatMoneyOptional(
                     r.pricePerUnit != null
                       ? Math.max(0, qtyById[r.id] ?? 0) * r.pricePerUnit
@@ -439,7 +439,7 @@ export default function BuyingListClient({
                   />
                 </td>
                 <td className="px-4 py-3 text-right hidden md:table-cell">
-                  <Link href={`/product/${r.id}`} className="text-xs text-emerald-300/90 hover:underline">
+                  <Link href={`/product/${r.id}`} className="text-xs text-indigo-600 hover:underline">
                     Details
                   </Link>
                 </td>
@@ -450,13 +450,13 @@ export default function BuyingListClient({
         </table>
       </div>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-zinc-500">
         Tick the checkboxes for the products you want in the CSV or email; use the header box to select or clear all.
         “Draft in Gmail” downloads the CSV and opens a compose tab — attach the file from Downloads yourself. “Email
         CSV (SMTP)” sends from your configured Gmail account with the CSV attached. You can skip the recipient field
-        if the server has <span className="text-slate-400">BUYING_LIST_EMAIL_TO</span> set. “Other mail app” uses your
+        if the server has <span className="text-zinc-500">BUYING_LIST_EMAIL_TO</span> set. “Other mail app” uses your
         default client (long lists may be shortened; the CSV matches your selection). Quantities here are for export /
-        email only; they do not update Airtable. The <strong className="text-slate-400">Airtable</strong> column
+        email only; they do not update Airtable. The <strong className="text-zinc-500">Airtable</strong> column
         updates snooze / order dates (sign in required).
       </p>
     </div>

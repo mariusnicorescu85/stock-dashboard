@@ -43,24 +43,24 @@ export default function CategoryWhatIfPanel({
       : null;
 
   return (
-    <div className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 sm:grid-cols-2">
+    <div className="grid gap-3 rounded-2xl border border-zinc-200 bg-white p-4 sm:grid-cols-2">
       <div className="space-y-3">
-        <p className="text-xs uppercase tracking-wide text-slate-400">
+        <p className="text-xs uppercase tracking-wide text-zinc-500">
           What if we adjust this category?
         </p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-zinc-500">
           Simulate total runway for <span className="font-semibold">{label}</span>{" "}
           without changing Airtable.
         </p>
 
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           <label className="space-y-1">
-            <span className="block text-[11px] uppercase tracking-wide text-slate-400">
+            <span className="block text-[11px] uppercase tracking-wide text-zinc-500">
               Total current stock
             </span>
             <input
               type="number"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-sm text-slate-100"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900"
               value={cur}
               onChange={(e) => setCur(Number(e.target.value) || 0)}
               min={0}
@@ -68,12 +68,12 @@ export default function CategoryWhatIfPanel({
           </label>
 
           <label className="space-y-1">
-            <span className="block text-[11px] uppercase tracking-wide text-slate-400">
+            <span className="block text-[11px] uppercase tracking-wide text-zinc-500">
               Total incoming stock
             </span>
             <input
               type="number"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-sm text-slate-100"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900"
               value={incoming}
               onChange={(e) => setIncoming(Number(e.target.value) || 0)}
               min={0}
@@ -81,12 +81,12 @@ export default function CategoryWhatIfPanel({
           </label>
 
           <label className="space-y-1">
-            <span className="block text-[11px] uppercase tracking-wide text-slate-400">
+            <span className="block text-[11px] uppercase tracking-wide text-zinc-500">
               Daily demand (sum, units/day)
             </span>
             <input
               type="number"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-sm text-slate-100"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900"
               value={daily}
               onChange={(e) =>
                 setDaily(roundDemandRate2(Number(e.target.value) || 0))
@@ -97,12 +97,12 @@ export default function CategoryWhatIfPanel({
           </label>
 
           <label className="space-y-1">
-            <span className="block text-[11px] uppercase tracking-wide text-slate-400">
+            <span className="block text-[11px] uppercase tracking-wide text-zinc-500">
               Lead time (days)
             </span>
             <input
               type="number"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-sm text-slate-100"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900"
               value={lead}
               onChange={(e) => setLead(Number(e.target.value) || 0)}
               min={0}
@@ -111,41 +111,41 @@ export default function CategoryWhatIfPanel({
         </div>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3">
-        <p className="text-xs uppercase tracking-wide text-emerald-300">
+      <div className="space-y-3 rounded-2xl border border-indigo-500/30 bg-emerald-500/5 p-3">
+        <p className="text-xs uppercase tracking-wide text-indigo-600">
           Simulated category outcome
         </p>
 
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <p className="text-[11px] text-emerald-200/80">Effective stock</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-100">
+            <p className="text-[11px] text-emerald-700/80">Effective stock</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-800">
               {derived.effectiveStock}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-emerald-200/80">
+            <p className="text-[11px] text-emerald-700/80">
               Days until run out
             </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-100">
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-800">
               {days != null ? days : "—"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-emerald-200/80">Run-out date</p>
-            <p className="mt-1 text-base font-semibold text-emerald-100">
+            <p className="text-[11px] text-emerald-700/80">Run-out date</p>
+            <p className="mt-1 text-base font-semibold text-emerald-800">
               {fmtGB(derived.runOutDate)}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-emerald-200/80">Order-by date</p>
-            <p className="mt-1 text-base font-semibold text-emerald-100">
+            <p className="text-[11px] text-emerald-700/80">Order-by date</p>
+            <p className="mt-1 text-base font-semibold text-emerald-800">
               {fmtGB(derived.orderByDate)}
             </p>
           </div>
         </div>
 
-        <p className="mt-1 text-[11px] text-emerald-200/70">
+        <p className="mt-1 text-[11px] text-emerald-700/70">
           Uses the same formula as individual products: total stock ÷ total
           daily demand, then subtract lead time for order-by.
         </p>

@@ -70,29 +70,29 @@ export default async function ComparePage(props: {
   const months = Array.from(new Set([...mapA.keys(), ...mapB.keys()])).sort();
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen text-zinc-900">
       <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Compare monthly sales</h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-zinc-500">
               Choose two products to compare units sold by month.
             </p>
           </div>
-          <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
+          <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-800">
             ← Back to dashboard
           </Link>
         </div>
 
         <form className="grid gap-3 sm:grid-cols-3" method="get">
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-wide text-slate-400">
+            <label className="text-xs uppercase tracking-wide text-zinc-500">
               Product A
             </label>
             <select
               name="a"
               defaultValue={aId}
-              className="w-full rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm"
             >
               <option value="">— Select —</option>
               {products.map((p) => (
@@ -104,13 +104,13 @@ export default async function ComparePage(props: {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-wide text-slate-400">
+            <label className="text-xs uppercase tracking-wide text-zinc-500">
               Product B
             </label>
             <select
               name="b"
               defaultValue={bId}
-              className="w-full rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm"
             >
               <option value="">— Select —</option>
               {products.map((p) => (
@@ -122,21 +122,21 @@ export default async function ComparePage(props: {
           </div>
 
           <div className="flex items-end">
-            <button className="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-white">
+            <button className="w-full rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
               Compare
             </button>
           </div>
         </form>
 
         {!productA || !productB ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-slate-300">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-zinc-600">
             Select two products and click{" "}
             <span className="font-semibold">Compare</span>.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-900/80 text-xs uppercase text-slate-400">
+              <thead className="bg-zinc-100 text-xs uppercase text-zinc-500">
                 <tr>
                   <th className="px-3 py-2">Month</th>
                   <th className="px-3 py-2 text-right">{productA.name}</th>
@@ -150,7 +150,7 @@ export default async function ComparePage(props: {
                   const b = mapB.get(m) ?? 0;
                   const diff = a - b;
                   return (
-                    <tr key={m} className="border-t border-slate-800/70">
+                    <tr key={m} className="border-t border-zinc-200">
                       <td className="px-3 py-2">{formatYM(m)}</td>
                       <td className="px-3 py-2 text-right">{a}</td>
                       <td className="px-3 py-2 text-right">{b}</td>
@@ -163,7 +163,7 @@ export default async function ComparePage(props: {
 
                 {months.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-6 text-center text-slate-400">
+                    <td colSpan={4} className="px-3 py-6 text-center text-zinc-500">
                       No monthly sales records found for these products.
                     </td>
                   </tr>

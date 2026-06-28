@@ -9,23 +9,23 @@ const staggerMs = 280;
 function statusStyles(status: DiagnosticCheck["status"]) {
   if (status === "ok")
     return {
-      ring: "border-emerald-500/40 bg-emerald-500/[0.08]",
-      dot: "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]",
-      label: "text-emerald-200",
-      badge: "bg-emerald-500/15 text-emerald-200 border-emerald-500/35",
+      ring: "border-emerald-500/40 bg-emerald-50",
+      dot: "bg-emerald-500 shadow-[0_0_12px_rgba(52,211,153,0.5)]",
+      label: "text-emerald-700",
+      badge: "bg-emerald-50 text-emerald-700 border-indigo-500/35",
     };
   if (status === "warn")
     return {
       ring: "border-amber-500/40 bg-amber-500/[0.07]",
       dot: "bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.4)]",
-      label: "text-amber-200",
-      badge: "bg-amber-500/15 text-amber-100 border-amber-500/35",
+      label: "text-amber-700",
+      badge: "bg-amber-500/15 text-amber-800 border-amber-500/35",
     };
   return {
     ring: "border-red-500/45 bg-red-500/[0.08]",
     dot: "bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.45)]",
-    label: "text-red-200",
-    badge: "bg-red-500/15 text-red-100 border-red-500/40",
+    label: "text-red-700",
+    badge: "bg-red-500/15 text-red-800 border-red-500/40",
   };
 }
 
@@ -33,10 +33,10 @@ function overallBanner(overall: DiagnosticsReport["overall"]) {
   if (overall === "ok")
     return {
       border: "border-emerald-500/50",
-      bg: "bg-emerald-500/[0.12]",
+      bg: "bg-emerald-50",
       title: "All checks passed",
       sub: "Configuration and the live Airtable probe look good.",
-      dot: "bg-emerald-400",
+      dot: "bg-emerald-500",
     };
   if (overall === "warn")
     return {
@@ -91,11 +91,11 @@ export function DiagnosticsView({ report }: { report: DiagnosticsReport }) {
               aria-hidden
             />
             <div>
-              <h2 className={`text-lg font-semibold ${report.overall === "ok" ? "text-emerald-100" : report.overall === "warn" ? "text-amber-50" : "text-red-50"}`}>
+              <h2 className={`text-lg font-semibold ${report.overall === "ok" ? "text-emerald-800" : report.overall === "warn" ? "text-amber-800" : "text-red-800"}`}>
                 {banner.title}
               </h2>
-              <p className="mt-1 text-sm text-slate-300/95 max-w-2xl">{report.summary}</p>
-              <p className="mt-2 font-mono text-[11px] text-slate-500">
+              <p className="mt-1 text-sm text-zinc-600 max-w-2xl">{report.summary}</p>
+              <p className="mt-2 font-mono text-[11px] text-zinc-500">
                 Finished in {report.durationMs}ms · {report.finishedAtIso}
               </p>
             </div>
@@ -104,18 +104,18 @@ export function DiagnosticsView({ report }: { report: DiagnosticsReport }) {
             type="button"
             disabled={pending}
             onClick={() => startTransition(() => router.refresh())}
-            className="mt-3 sm:mt-0 h-10 shrink-0 rounded-xl border border-slate-600 bg-slate-950/50 px-4 text-sm font-medium text-slate-200 hover:bg-slate-900/80 disabled:opacity-50"
+            className="mt-3 sm:mt-0 h-10 shrink-0 rounded-xl border border-zinc-300 bg-zinc-50 px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-50"
           >
             {pending ? "Running…" : "Run checks again"}
           </button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800/80 bg-slate-900/50 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-        <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-500">
           Check sequence
         </h3>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-zinc-500">
           Steps run in order on the server; each row appears as the report replays the sequence.
         </p>
         <ol className="mt-6 space-y-3">
@@ -131,7 +131,7 @@ export function DiagnosticsView({ report }: { report: DiagnosticsReport }) {
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex gap-3 min-w-0">
-                    <span className="font-mono text-xs text-slate-500 tabular-nums w-6 shrink-0 pt-0.5">
+                    <span className="font-mono text-xs text-zinc-500 tabular-nums w-6 shrink-0 pt-0.5">
                       {check.order.toString().padStart(2, "0")}
                     </span>
                     <div className="min-w-0">
@@ -144,9 +144,9 @@ export function DiagnosticsView({ report }: { report: DiagnosticsReport }) {
                           {check.status === "ok" ? "OK" : check.status === "warn" ? "Warning" : "Failed"}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-slate-400">{check.description}</p>
+                      <p className="mt-1 text-sm text-zinc-500">{check.description}</p>
                       {check.detail ? (
-                        <p className="mt-2 font-mono text-xs text-slate-300/90 break-words">
+                        <p className="mt-2 font-mono text-xs text-zinc-600 break-words">
                           {check.detail}
                         </p>
                       ) : null}

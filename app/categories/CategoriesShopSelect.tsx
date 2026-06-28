@@ -22,11 +22,11 @@ export default function CategoriesShopSelect({ year, shop }: Props) {
 
   return (
     <label className="flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-slate-400 whitespace-nowrap">Shop:</span>
+      <span className="text-zinc-500 whitespace-nowrap">Shop:</span>
       <select
         value={shop}
         onChange={(e) => onChange(e.target.value as ShopFilter)}
-        className="rounded-lg border border-slate-600 bg-slate-950/90 px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
+        className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-zinc-900 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/30"
       >
         <option value="all">All</option>
         <option value="pyt">PYT Hairstyle</option>

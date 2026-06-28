@@ -90,36 +90,36 @@ export default function AllocationSummary({ products, allocations, activeShops }
     : null;
 
   return (
-    <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-      <h2 className="text-lg font-semibold text-slate-200 mb-4">Allocation Summary</h2>
+    <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-zinc-800 mb-4">Allocation Summary</h2>
 
       {/* Overall totals */}
       <div className="grid gap-4 sm:grid-cols-3 mb-6">
-        <div className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-4">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">Master Stock</p>
-          <p className="text-2xl font-bold text-slate-100 tabular-nums">{totalMasterStock}</p>
+        <div className="rounded-xl border border-zinc-300 bg-white p-4">
+          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Master Stock</p>
+          <p className="text-2xl font-bold text-zinc-900 tabular-nums">{totalMasterStock}</p>
         </div>
-        <div className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-4">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">Total Allocated</p>
-          <p className="text-2xl font-bold text-emerald-300 tabular-nums">{totalAllocated}</p>
+        <div className="rounded-xl border border-zinc-300 bg-white p-4">
+          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Total Allocated</p>
+          <p className="text-2xl font-bold text-indigo-600 tabular-nums">{totalAllocated}</p>
         </div>
-        <div className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-4">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">Remaining</p>
+        <div className="rounded-xl border border-zinc-300 bg-white p-4">
+          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Remaining</p>
           <p className="text-2xl font-bold text-amber-300 tabular-nums">{totalRemaining}</p>
         </div>
       </div>
 
       {/* Master runway */}
       {masterRunway != null && (
-        <div className="mb-6 p-4 rounded-xl border border-slate-700/80 bg-slate-950/60">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">Master Stock Runway</p>
+        <div className="mb-6 p-4 rounded-xl border border-zinc-300 bg-white">
+          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Master Stock Runway</p>
           <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-bold text-slate-100 tabular-nums">
+            <span className="text-3xl font-bold text-zinc-900 tabular-nums">
               {Math.round(masterRunway)}
             </span>
-            <span className="text-sm text-slate-400">days</span>
+            <span className="text-sm text-zinc-500">days</span>
             {masterRunOutDate && (
-              <span className="ml-auto text-xs text-slate-500">
+              <span className="ml-auto text-xs text-zinc-500">
                 Until {fmtGB(masterRunOutDate)}
               </span>
             )}
@@ -129,17 +129,17 @@ export default function AllocationSummary({ products, allocations, activeShops }
 
       {/* Per-shop totals */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-300 mb-3">Allocated by Shop</h3>
+        <h3 className="text-sm font-semibold text-zinc-600 mb-3">Allocated by Shop</h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {shopTotals.map(({ shop, total, avgDays }) => (
             <div
               key={shop.id}
-              className="rounded-lg border border-slate-700/80 bg-slate-950/60 p-3"
+              className="rounded-lg border border-zinc-300 bg-white p-3"
             >
-              <p className="text-xs text-slate-400 mb-1">{shop.name}</p>
-              <p className="text-lg font-semibold text-emerald-300 tabular-nums">{total}</p>
+              <p className="text-xs text-zinc-500 mb-1">{shop.name}</p>
+              <p className="text-lg font-semibold text-indigo-600 tabular-nums">{total}</p>
               {avgDays != null && (
-                <p className="text-xs text-slate-500 mt-1">~{Math.round(avgDays)} days avg</p>
+                <p className="text-xs text-zinc-500 mt-1">~{Math.round(avgDays)} days avg</p>
               )}
             </div>
           ))}

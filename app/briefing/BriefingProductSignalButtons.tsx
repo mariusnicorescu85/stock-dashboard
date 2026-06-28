@@ -22,7 +22,7 @@ export default function BriefingProductSignalButtons({
 
   const table = row.airtableTable?.trim();
   if (!table) {
-    return <span className="text-[10px] text-slate-600">—</span>;
+    return <span className="text-[10px] text-zinc-500">—</span>;
   }
 
   async function run(action: Action) {
@@ -53,11 +53,11 @@ export default function BriefingProductSignalButtons({
   }
 
   const btn =
-    "rounded-md border border-slate-600/80 bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-40";
+    "rounded-md border border-zinc-300/80 bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 hover:bg-zinc-200 disabled:opacity-40";
 
   return (
     <div className="flex flex-col gap-1 min-w-[7.5rem]">
-      <span className="text-[9px] uppercase tracking-wide text-slate-500">Snooze</span>
+      <span className="text-[9px] uppercase tracking-wide text-zinc-500">Snooze</span>
       <div className="flex flex-wrap gap-0.5">
         <button type="button" disabled={busy} className={btn} onClick={() => run("snooze3")}>
           +3d
@@ -72,7 +72,7 @@ export default function BriefingProductSignalButtons({
           Clear
         </button>
       </div>
-      <span className="text-[9px] uppercase tracking-wide text-slate-500">Order</span>
+      <span className="text-[9px] uppercase tracking-wide text-zinc-500">Order</span>
       <div className="flex flex-wrap gap-0.5">
         <button type="button" disabled={busy} className={btn} onClick={() => run("markOrdered")}>
           Placed today

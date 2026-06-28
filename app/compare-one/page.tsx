@@ -107,27 +107,27 @@ export default async function CompareOnePage(props: {
     rows.length > 0 ? totalSelected / rows.length : null;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen text-zinc-900">
       <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">
               Compare one product across months
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-zinc-500">
               Select a product, then select any number of months.
-              <span className="ml-2 text-slate-500">
+              <span className="ml-2 text-zinc-500">
                 (Hold Ctrl/⌘ to pick multiple)
               </span>
             </p>
           </div>
-          <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
+          <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-800">
             ← Back to dashboard
           </Link>
         </div>
 
         {/* Controls */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-4">
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 space-y-4">
           <CompareOneForm
   products={products}
   productId={productId}
@@ -138,22 +138,22 @@ export default async function CompareOnePage(props: {
 
           {product && (
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-zinc-500">
                   Selected months
                 </p>
                 <p className="mt-2 text-2xl font-semibold">{rows.length}</p>
               </div>
 
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-zinc-500">
                   Total units (selected)
                 </p>
                 <p className="mt-2 text-2xl font-semibold">{totalSelected}</p>
               </div>
 
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-zinc-500">
                   Avg units / month
                 </p>
                 <p className="mt-2 text-2xl font-semibold">
@@ -166,13 +166,13 @@ export default async function CompareOnePage(props: {
 
         {/* Results */}
         {!product ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-slate-300">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-zinc-600">
             Select a product to begin.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-900/80 text-xs uppercase text-slate-400">
+              <thead className="bg-zinc-100 text-xs uppercase text-zinc-500">
                 <tr>
                   <th className="px-3 py-2">Month</th>
                   <th className="px-3 py-2 text-right">Units sold</th>
@@ -182,13 +182,13 @@ export default async function CompareOnePage(props: {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.m} className="border-t border-slate-800/70">
+                  <tr key={r.m} className="border-t border-zinc-200">
                     <td className="px-3 py-2">{formatYM(r.m)}</td>
                     <td className="px-3 py-2 text-right">{r.units}</td>
                     <td className="px-3 py-2 text-right">
                       {r.diff == null ? "—" : r.diff > 0 ? `+${r.diff}` : r.diff}
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-300">
+                    <td className="px-3 py-2 text-right text-zinc-600">
                       {r.pct == null ? "—" : `${r.pct.toFixed(0)}%`}
                     </td>
                   </tr>
@@ -196,7 +196,7 @@ export default async function CompareOnePage(props: {
 
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-6 text-center text-slate-400">
+                    <td colSpan={4} className="px-3 py-6 text-center text-zinc-500">
                       Select one or more months to compare.
                     </td>
                   </tr>

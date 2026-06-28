@@ -1,17 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #030712;
-  --foreground: #e5e7eb;
-  --surface: rgba(15, 23, 42, 0.7);
-  --border: rgba(148, 163, 184, 0.18);
-  --muted: #94a3b8;
-  --primary: #34d399;
-  --primary-weak: rgba(52, 211, 153, 0.12);
-  --accent: #fbbf24;
-  --accent-weak: rgba(251, 191, 36, 0.12);
-  --danger: #f87171;
-  --danger-weak: rgba(248, 113, 113, 0.16);
+  color-scheme: light;
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --surface: #ffffff;
+  --border: #e4e4e7;
+  --muted: #71717a;
+  --primary: #4f46e5;
+  --primary-weak: rgba(79, 70, 229, 0.12);
+  --accent: #6366f1;
+  --accent-weak: rgba(99, 102, 241, 0.12);
+  --danger: #dc2626;
+  --danger-weak: rgba(220, 38, 38, 0.12);
 }
 
 @theme inline {
@@ -22,18 +23,46 @@
 }
 
 body {
-  background: radial-gradient(120% 70% at 20% 20%, #0b1224, #030712 60%),
-    radial-gradient(90% 60% at 80% 0%, rgba(52, 211, 153, 0.12), transparent 50%),
-    radial-gradient(60% 50% at 70% 80%, rgba(59, 130, 246, 0.08), transparent 60%),
-    #030712;
+  background-color: var(--background);
+  background-image:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.85), rgb(244 244 245 / 1)),
+    radial-gradient(ellipse 120% 80% at 0% -20%, rgb(199 210 254 / 0.45), transparent 55%),
+    radial-gradient(ellipse 100% 60% at 100% 0%, rgb(165 180 252 / 0.25), transparent 50%);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   min-height: 100vh;
   padding: 0;
   margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: rgb(212 212 216 / 0.9) transparent;
+}
+
+@layer components {
+  .surface {
+    @apply rounded-2xl border border-zinc-200/90 bg-white shadow-sm shadow-zinc-950/[0.04];
+  }
+
+  .surface-elevated {
+    @apply rounded-2xl border border-zinc-200/80 bg-white shadow-md shadow-zinc-950/[0.06];
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:opacity-50;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm transition placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20;
+  }
+
+  .table-shell {
+    @apply max-w-full min-w-0 rounded-2xl border border-zinc-200/90 bg-white shadow-sm shadow-zinc-950/[0.03];
+  }
 }

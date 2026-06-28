@@ -28,23 +28,23 @@ export default async function MonitorPage({
   const scopeLabel = shopFilterLabel(shop);
 
   const subtleLink =
-    "text-sm font-medium text-slate-400 underline-offset-4 decoration-slate-600 hover:text-slate-200 hover:decoration-slate-400 transition-colors";
+    "text-sm font-medium text-zinc-500 underline-offset-4 decoration-zinc-400 hover:text-zinc-800 hover:decoration-zinc-500 transition-colors";
   const focusLink =
-    "text-sm font-semibold text-teal-400/95 underline underline-offset-4 decoration-teal-500/35 hover:text-teal-300";
+    "text-sm font-semibold text-indigo-600 underline underline-offset-4 decoration-indigo-400/50 hover:text-indigo-500";
 
   return (
-    <main className="min-h-screen w-full bg-slate-950 text-slate-100 antialiased">
+    <main className="min-h-screen w-full bg-white text-zinc-900 antialiased">
       <div className="w-full px-5 pb-14 pt-8 sm:px-8 lg:px-12">
-        <header className="mb-10 w-full border-b border-slate-800/60 pb-8">
+        <header className="mb-10 w-full border-b border-zinc-200 pb-8">
           <div className="grid w-full gap-y-8 gap-x-12 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start xl:gap-y-6">
             <div className="min-w-0 space-y-2 xl:max-w-2xl">
               <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-[2rem]">
                 Stock monitor
               </h1>
-              <p className="max-w-none text-[15px] leading-relaxed text-slate-400">
-                <span className="font-medium text-slate-300">{scopeLabel}</span>
+              <p className="max-w-none text-[15px] leading-relaxed text-zinc-500">
+                <span className="font-medium text-zinc-600">{scopeLabel}</span>
                 {" — "}
-                <span className="text-slate-400">
+                <span className="text-zinc-500">
                   Same queue as briefing — urgency, run‑out, planner qty, min‑order stress test.
                 </span>
               </p>
@@ -55,7 +55,7 @@ export default async function MonitorPage({
               aria-label="Monitor shortcuts"
             >
               <div className="flex items-center gap-2 whitespace-nowrap px-2">
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-600">Shop</span>
+                <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">Shop</span>
                 <MonitorShopSelect shop={shop} />
               </div>
               <Link

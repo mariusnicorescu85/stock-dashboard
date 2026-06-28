@@ -11,27 +11,27 @@ function severityStyles(s: BriefingDecisionSeverity): {
   switch (s) {
     case "critical":
       return {
-        border: "border-red-500/35 bg-red-950/30",
-        badge: "bg-red-500/20 text-red-200 border-red-400/35",
-        title: "text-red-100",
+        border: "border-red-200 bg-red-50",
+        badge: "bg-red-500/20 text-red-700 border-red-400/35",
+        title: "text-red-800",
       };
     case "high":
       return {
-        border: "border-amber-500/35 bg-amber-950/20",
-        badge: "bg-amber-500/20 text-amber-200 border-amber-400/35",
-        title: "text-amber-100",
+        border: "border-amber-200 bg-amber-50",
+        badge: "bg-amber-500/20 text-amber-700 border-amber-400/35",
+        title: "text-amber-800",
       };
     case "medium":
       return {
-        border: "border-slate-600/60 bg-slate-900/50",
-        badge: "bg-slate-600/30 text-slate-200 border-slate-500/35",
-        title: "text-slate-100",
+        border: "border-zinc-300/60 bg-zinc-50",
+        badge: "bg-zinc-200 text-zinc-800 border-zinc-300",
+        title: "text-zinc-900",
       };
     default:
       return {
-        border: "border-emerald-500/25 bg-emerald-950/15",
-        badge: "bg-emerald-500/15 text-emerald-200/90 border-emerald-500/25",
-        title: "text-emerald-100/90",
+        border: "border-indigo-200 bg-indigo-50",
+        badge: "bg-emerald-50 text-emerald-700/90 border-indigo-500/25",
+        title: "text-emerald-800/90",
       };
   }
 }
@@ -75,13 +75,13 @@ function BriefingDecisionsPanelInner({ decisions }: { decisions: BriefingDecisio
   }
 
   return (
-    <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-950/25 to-slate-950/40 p-4 space-y-3">
+    <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-4 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1 min-w-0">
           <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-200/85">
             What we suggest you do
           </h2>
-          <p className="text-[11px] text-slate-500 max-w-xl">
+          <p className="text-[11px] text-zinc-500 max-w-xl">
             Scan the titles first. Open a card only when you want the full reasoning and checklist.
           </p>
         </div>
@@ -89,7 +89,7 @@ function BriefingDecisionsPanelInner({ decisions }: { decisions: BriefingDecisio
           <button
             type="button"
             onClick={() => (allExpanded ? collapseNonCritical() : expandAll())}
-            className="rounded-lg border border-slate-600/80 bg-slate-900/60 px-2.5 py-1 text-[11px] text-slate-300 hover:bg-slate-800/80"
+            className="rounded-lg border border-zinc-300/80 bg-zinc-50 px-2.5 py-1 text-[11px] text-zinc-600 hover:bg-zinc-100"
           >
             {allExpanded ? "Shorter view" : "Expand all"}
           </button>
@@ -120,13 +120,13 @@ function BriefingDecisionsPanelInner({ decisions }: { decisions: BriefingDecisio
                     {d.title}
                   </span>
                   {!open && d.suggestedActions[0] ? (
-                    <span className="mt-1 block text-xs text-slate-500 line-clamp-2">
+                    <span className="mt-1 block text-xs text-zinc-500 line-clamp-2">
                       {d.suggestedActions[0]}
                     </span>
                   ) : null}
                 </span>
                 <span
-                  className="shrink-0 text-slate-500 tabular-nums text-lg leading-none pt-0.5 w-6 text-center"
+                  className="shrink-0 text-zinc-500 tabular-nums text-lg leading-none pt-0.5 w-6 text-center"
                   aria-hidden
                 >
                   {open ? "−" : "+"}
@@ -134,25 +134,25 @@ function BriefingDecisionsPanelInner({ decisions }: { decisions: BriefingDecisio
               </button>
               {open ? (
                 <div className="px-4 pb-4 pt-0 space-y-2.5 border-t border-white/[0.06]">
-                  <ul className="list-disc pl-4 text-xs text-slate-400 space-y-1 leading-relaxed">
+                  <ul className="list-disc pl-4 text-xs text-zinc-500 space-y-1 leading-relaxed">
                     {d.rationale.map((line, i) => (
                       <li key={i}>{line}</li>
                     ))}
                   </ul>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 mb-1">
                       Practical next steps
                     </p>
-                    <ul className="list-disc pl-4 text-xs text-slate-300 space-y-0.5">
+                    <ul className="list-disc pl-4 text-xs text-zinc-600 space-y-0.5">
                       {d.suggestedActions.map((line, i) => (
                         <li key={i}>{line}</li>
                       ))}
                     </ul>
                   </div>
                   {d.relatedProductNames && d.relatedProductNames.length > 0 ? (
-                    <p className="text-[11px] text-slate-500">
-                      <span className="text-slate-500">Products: </span>
-                      <span className="text-slate-400">{d.relatedProductNames.join(", ")}</span>
+                    <p className="text-[11px] text-zinc-500">
+                      <span className="text-zinc-500">Products: </span>
+                      <span className="text-zinc-500">{d.relatedProductNames.join(", ")}</span>
                     </p>
                   ) : null}
                 </div>

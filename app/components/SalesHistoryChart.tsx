@@ -45,11 +45,11 @@ export default function SalesHistoryChart({
   }, [sliced]);
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-100">{title}</h3>
-          <p className="text-xs text-slate-400">
+          <h3 className="text-sm font-semibold text-zinc-900">{title}</h3>
+          <p className="text-xs text-zinc-500">
             Hover to see exact units sold per month.
           </p>
         </div>
@@ -64,8 +64,8 @@ export default function SalesHistoryChart({
                 onClick={() => setRange(k)}
                 className={`rounded-full border px-3 py-1.5 transition ${
                   active
-                    ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100"
-                    : "border-slate-700/80 bg-slate-950/40 text-slate-200 hover:bg-slate-900/60"
+                    ? "border-indigo-500/70 bg-indigo-500/10 text-indigo-800"
+                    : "border-zinc-300 bg-zinc-50 text-zinc-800 hover:bg-zinc-50"
                 }`}
               >
                 {k === "all" ? "All" : `Last ${k}`}
@@ -92,10 +92,10 @@ export default function SalesHistoryChart({
             />
             <Tooltip
               contentStyle={{
-                background: "rgba(2, 6, 23, 0.95)",
-                border: "1px solid rgba(148, 163, 184, 0.25)",
+                background: "#ffffff",
+                border: "1px solid #e4e4e7",
                 borderRadius: 12,
-                color: "#e2e8f0",
+                color: "#18181b",
               }}
               labelFormatter={(ym) => formatYM(String(ym))}
               formatter={(value) => [`${value} units`, "Units Sold"]}
@@ -103,7 +103,7 @@ export default function SalesHistoryChart({
             <Line
               type="monotone"
               dataKey="unitsSold"
-              stroke="rgba(52, 211, 153, 0.9)"
+              stroke="#4f46e5"
               strokeWidth={2.5}
               dot={{ r: 3 }}
               activeDot={{ r: 5 }}

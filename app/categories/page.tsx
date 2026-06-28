@@ -431,28 +431,28 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
     : null;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen text-zinc-900">
       <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold">Category demand overview</h1>
-          <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
+          <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-800">
             ← Back to dashboard
           </Link>
         </div>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3">
+        <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/80">
+              <p className="text-xs uppercase tracking-[0.2em] text-indigo-600">
                 Primary year
               </p>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-zinc-500">
                 Monthly history loaded: {histYears.join(", ")}.
               </p>
-              <p className="mt-2 text-sm text-slate-300">
-                <span className="text-emerald-300/90">Monthly detail:</span> scroll
+              <p className="mt-2 text-sm text-zinc-600">
+                <span className="text-indigo-600">Monthly detail:</span> scroll
                 to the two buttons under this box and choose{" "}
-                <strong className="font-medium text-slate-100">
+                <strong className="font-medium text-zinc-900">
                   Monthly (Jan–Dec)
                 </strong>{" "}
                 — that tab shows Jan–Dec columns for each year.
@@ -461,8 +461,8 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
 
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <CategoriesShopSelect year={year} shop={shop} />
-              <span className="text-slate-600 hidden sm:inline">|</span>
-              <span className="text-slate-400">Year:</span>
+              <span className="text-zinc-500 hidden sm:inline">|</span>
+              <span className="text-zinc-500">Year:</span>
               {SUPPORTED_YEARS.map((y) => {
                 const params = new URLSearchParams();
                 params.set("year", String(y));
@@ -474,8 +474,8 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
                     href={`/categories?${params.toString()}`}
                     className={`rounded-full border px-3 py-1.5 transition ${
                       active
-                        ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
-                        : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
+                        ? "border-indigo-500/70 bg-indigo-500/10 text-indigo-800 shadow-sm shadow-indigo-500/10"
+                        : "border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400/50 hover:text-indigo-700"
                     }`}
                   >
                     {y}
@@ -494,7 +494,7 @@ export default async function CategoriesPage(props: { searchParams?: SearchParam
         ) : null}
 
         {filteredBlocks.length === 0 ? (
-          <p className="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-6 text-sm text-slate-400">
+          <p className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-6 text-sm text-zinc-500">
             No category demand groups match this shop filter.
           </p>
         ) : (

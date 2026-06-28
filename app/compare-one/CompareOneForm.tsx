@@ -20,7 +20,7 @@ export default function CompareOneForm({
   return (
     <form method="get" className="grid gap-3 sm:grid-cols-3">
       <div className="space-y-1 sm:col-span-1">
-        <label className="text-xs uppercase tracking-wide text-slate-400">
+        <label className="text-xs uppercase tracking-wide text-zinc-500">
           Product
         </label>
         <select
@@ -31,7 +31,7 @@ export default function CompareOneForm({
             // load months immediately, clear months selection
             router.push(next ? `/compare-one?p=${next}` : `/compare-one`);
           }}
-          className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
         >
           <option value="">— Select —</option>
           {products.map((p) => (
@@ -43,14 +43,14 @@ export default function CompareOneForm({
       </div>
 
       <div className="space-y-1 sm:col-span-2">
-        <label className="text-xs uppercase tracking-wide text-slate-400">
+        <label className="text-xs uppercase tracking-wide text-zinc-500">
           Months (multi-select)
         </label>
         <select
           name="m"
           multiple
           defaultValue={selectedMonths}
-          className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
           size={Math.min(12, Math.max(6, monthsAvailable.length || 6))}
           disabled={!productId}
         >
@@ -62,7 +62,7 @@ export default function CompareOneForm({
         </select>
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <button className="inline-flex h-9 items-center rounded-xl bg-slate-100 px-3 text-sm font-semibold text-slate-900 hover:bg-white">
+          <button className="inline-flex h-9 items-center rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white hover:bg-indigo-500">
             Apply
           </button>
         </div>

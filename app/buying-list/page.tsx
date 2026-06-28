@@ -53,42 +53,42 @@ export default async function BuyingListPage({
   const scope = shopFilterLabel(shop);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen text-zinc-900">
       <div className="mx-auto max-w-[90rem] px-4 py-10 space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/80">Ops Control</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-indigo-600">Ops Control</p>
             <h1 className="text-3xl font-semibold leading-tight">Buying list</h1>
-            <p className="text-sm text-slate-400 max-w-xl">
+            <p className="text-sm text-zinc-500 max-w-xl">
               Lines that need ordering for{" "}
-              <span className="text-slate-200">{scope}</span>, sorted by order-by date. Adjust quantities, then
+              <span className="text-zinc-800">{scope}</span>, sorted by order-by date. Adjust quantities, then
               export or email.
             </p>
-            <p className="text-xs text-slate-500">{dateLabel}</p>
+            <p className="text-xs text-zinc-500">{dateLabel}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <BuyingListShopSelect shop={shop} />
             <Link
               href={`/monitor${shop !== "all" ? `?shop=${shop}` : ""}`}
-              className="h-10 inline-flex items-center rounded-xl border border-teal-600/55 bg-teal-500/10 px-3 text-sm font-medium text-teal-200 hover:bg-teal-500/16"
+              className="h-10 inline-flex items-center rounded-xl border border-indigo-300 bg-indigo-50 px-3 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
             >
               Action monitor
             </Link>
             <Link
               href="/briefing"
-              className="h-10 inline-flex items-center rounded-xl border border-slate-600 bg-slate-900/60 px-3 text-sm text-slate-200 hover:bg-slate-800/80"
+              className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-zinc-50 px-3 text-sm text-zinc-800 hover:bg-zinc-100"
             >
               ← Stock briefing
             </Link>
             <Link
               href="/?view=reorder&sort=orderBy"
-              className="h-10 inline-flex items-center rounded-xl border border-slate-600 bg-slate-900/60 px-3 text-sm text-slate-200 hover:bg-slate-800/80"
+              className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-zinc-50 px-3 text-sm text-zinc-800 hover:bg-zinc-100"
             >
               Full dashboard
             </Link>
             <Link
               href="/ops/orders"
-              className="h-10 inline-flex items-center rounded-xl border border-slate-600 bg-slate-900/60 px-3 text-sm text-slate-200 hover:bg-slate-800/80"
+              className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-zinc-50 px-3 text-sm text-zinc-800 hover:bg-zinc-100"
             >
               Order progress
             </Link>

@@ -37,11 +37,11 @@ export default async function ProductDetailPage({
 
   if (!product) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-100">
+      <main className="min-h-screen text-zinc-900">
         <div className="mx-auto max-w-5xl px-4 py-8">
           <Link
             href="/"
-            className="text-sm text-slate-400 hover:text-slate-200"
+            className="text-sm text-zinc-500 hover:text-zinc-800"
           >
             ← Back to dashboard
           </Link>
@@ -137,34 +137,34 @@ const trendLabel =
 
 
   return (
-    <main className="min-h-screen text-slate-100">
+    <main className="min-h-screen text-zinc-900">
       <div className="mx-auto max-w-5xl px-4 py-10 space-y-8">
-        <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
+        <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-800">
           ← Back to dashboard
         </Link>
 
         {/* Header */}
         <header className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900/70 border border-slate-800/70 text-lg font-semibold">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-50 border border-zinc-200 text-lg font-semibold">
               {(product.brand ?? "•").slice(0, 1)}
             </div>
             <div>
               <h1 className="text-3xl font-semibold leading-tight">{product.name}</h1>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-zinc-500">
                 {product.brand} · {product.productType}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-emerald-100">
+            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 bg-emerald-500/15 px-3 py-1 text-emerald-800">
               🛠️ Runway:{" "}
               {product.daysUntilRunOut != null ? `${Math.max(0, Math.round(product.daysUntilRunOut))}d` : "—"}
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/15 px-3 py-1 text-amber-100">
+            <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/15 px-3 py-1 text-amber-800">
               📅 Order by: {formatDate(product.orderByDate)}
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-slate-200">
+            <span className="inline-flex items-center gap-2 rounded-full border border-zinc-300/70 bg-zinc-50 px-3 py-1 text-zinc-800">
               ⏱ Lead time: {product.leadTimeDays ?? "—"}d
             </span>
           </div>
@@ -172,24 +172,24 @@ const trendLabel =
 
         {/* Summary cards */}
         <section className="grid gap-4 sm:grid-cols-4">
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
-            <p className="text-xs uppercase tracking-wide text-slate-400">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+            <p className="text-xs uppercase tracking-wide text-zinc-500">
               Current stock
             </p>
             <p className="mt-2 text-2xl font-semibold tabular-nums">
               {product.currentStock}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
-            <p className="text-xs uppercase tracking-wide text-slate-400">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+            <p className="text-xs uppercase tracking-wide text-zinc-500">
               Demand this month (2024 pattern)
             </p>
             <p className="mt-2 text-2xl font-semibold tabular-nums">
               {product.totalDemandThisMonth}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
-            <p className="text-xs uppercase tracking-wide text-slate-400">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+            <p className="text-xs uppercase tracking-wide text-zinc-500">
               Days until run out
             </p>
             <p className="mt-2 text-2xl font-semibold tabular-nums">
@@ -198,30 +198,30 @@ const trendLabel =
                 : "—"}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
-            <p className="text-xs uppercase tracking-wide text-slate-400">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+            <p className="text-xs uppercase tracking-wide text-zinc-500">
               Qty to order
             </p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-emerald-300">
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-indigo-600">
               {product.qtyToOrder}
             </p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-zinc-500">
               Order by: {formatDate(product.orderByDate)}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-zinc-500">
               Target-cover gap before supplier rules:{" "}
-              <span className="text-slate-400 tabular-nums">{product.qtyToOrderRaw}</span>
+              <span className="text-zinc-500 tabular-nums">{product.qtyToOrderRaw}</span>
               {product.qtyToOrderRaw !== product.qtyToOrder ? (
                 <>
                   {" "}
-                  → rounded to <span className="text-emerald-200/90 tabular-nums">{product.qtyToOrder}</span>{" "}
+                  → rounded to <span className="text-emerald-700/90 tabular-nums">{product.qtyToOrder}</span>{" "}
                   (supplier minimum · pack size)
                 </>
               ) : null}{" "}
               — (lead + {coverBufferDays}d buffer) × daily demand − effective stock.
             </p>
             {(product.orderMoq != null || product.orderPackSize != null) && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-zinc-500">
                 Airtable supplier rules:{" "}
                 {[product.orderMoq != null ? `Min order ${product.orderMoq} units` : null, product.orderPackSize != null ? `Pack size ${product.orderPackSize}` : null]
                   .filter(Boolean)
@@ -229,16 +229,16 @@ const trendLabel =
               </p>
             )}
             {product.pricePerUnit != null ? (
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-zinc-500">
                 Unit price (Airtable, {product.purchaseCurrency}):{" "}
-                <span className="text-slate-200 tabular-nums">
+                <span className="text-zinc-800 tabular-nums">
                   {formatMoneyForBrandOptional(product.brand, product.pricePerUnit)}
                 </span>
                 {product.qtyToOrder > 0 ? (
                   <>
                     {" "}
                     → order value at list qty{" "}
-                    <span className="text-emerald-200/90 tabular-nums font-medium">
+                    <span className="text-emerald-700/90 tabular-nums font-medium">
                       {formatMoneyForBrandOptional(
                         product.brand,
                         product.qtyToOrder * product.pricePerUnit
@@ -254,13 +254,13 @@ const trendLabel =
         {/* Sales history chart */}
 <section className="space-y-3">
   <h2 className="text-lg font-semibold">Sales history overview</h2>
-  <p className="text-xs text-slate-400">
+  <p className="text-xs text-zinc-500">
     Monthly units sold (individual only). Use Last 12 / Last 24 / All.
   </p>
 
   {chartData.length === 0 ? (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-      <p className="text-sm text-slate-400">
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+      <p className="text-sm text-zinc-500">
         No monthly sales records found for this product.
       </p>
     </div>
@@ -273,14 +273,14 @@ const trendLabel =
         {/* Sales history table */}
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Sales history</h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-zinc-500">
             Each row is a monthly entry from your Monthly Sales tables
             (Opatra + PYT).
           </p>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-900/80 text-xs uppercase text-slate-400">
+              <thead className="bg-zinc-100 text-xs uppercase text-zinc-500">
                 <tr>
                   <th className="px-3 py-2">Period</th>
                   <th className="px-3 py-2">Month start</th>
@@ -295,7 +295,7 @@ const trendLabel =
                 {sortedSales.map((s) => (
                   <tr
                     key={s.id}
-                    className="border-t border-slate-800/70 hover:bg-slate-900/90"
+                    className="border-t border-zinc-200 hover:bg-zinc-50/90"
                   >
                     <td className="px-3 py-2">{s.label}</td>
                     <td className="px-3 py-2">
@@ -325,7 +325,7 @@ const trendLabel =
                   <tr>
                     <td
                       colSpan={7}
-                      className="px-3 py-6 text-center text-slate-400"
+                      className="px-3 py-6 text-center text-zinc-500"
                     >
                       No monthly sales records found for this product.
                     </td>
@@ -349,74 +349,74 @@ const trendLabel =
 
         {/* Demand trend */}
 <section className="grid gap-4 sm:grid-cols-3">
-  <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-    <p className="text-xs uppercase tracking-wide text-slate-400">
+  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+    <p className="text-xs uppercase tracking-wide text-zinc-500">
       Latest month demand
     </p>
     <p className="mt-2 text-2xl font-semibold">
       {latest && latest.monthlyDemand != null ? latest.monthlyDemand : "—"}
     </p>
-    <p className="mt-1 text-sm text-slate-400">
+    <p className="mt-1 text-sm text-zinc-500">
       Daily:{" "}
-      <span className="font-medium text-slate-200">
+      <span className="font-medium text-zinc-800">
         {latest && latest.dailyDemand != null && Number.isFinite(latest.dailyDemand)
           ? latest.dailyDemand.toFixed(2)
           : "—"}
       </span>
     </p>
-    <p className="mt-1 text-xs text-slate-500">
+    <p className="mt-1 text-xs text-zinc-500">
       {latest?.label ?? "No data"}
     </p>
   </div>
 
-  <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-    <p className="text-xs uppercase tracking-wide text-slate-400">
+  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+    <p className="text-xs uppercase tracking-wide text-zinc-500">
       3-month average demand
     </p>
     <p className="mt-2 text-2xl font-semibold">
       {avgMonthlyDemand != null ? Math.round(avgMonthlyDemand) : "—"}
     </p>
-    <p className="mt-1 text-sm text-slate-400">
+    <p className="mt-1 text-sm text-zinc-500">
       Daily:{" "}
-      <span className="font-medium text-slate-200">
+      <span className="font-medium text-zinc-800">
         {avgDailyDemand != null ? avgDailyDemand.toFixed(2) : "—"}
       </span>
     </p>
-    <p className="mt-1 text-xs text-slate-500">
+    <p className="mt-1 text-xs text-zinc-500">
       Based on last {last3.length} month(s)
     </p>
   </div>
 
-  <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-    <p className="text-xs uppercase tracking-wide text-slate-400">
+  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+    <p className="text-xs uppercase tracking-wide text-zinc-500">
       Trend vs avg
     </p>
     <p className="mt-2 text-lg font-semibold">
       {trendLabel}
     </p>
-    <p className="mt-1 text-sm text-slate-400">
+    <p className="mt-1 text-sm text-zinc-500">
       {pctChange != null ? `${pctChange.toFixed(0)}%` : "—"}
     </p>
-    <p className="mt-1 text-xs text-slate-500">
+    <p className="mt-1 text-xs text-zinc-500">
       Latest vs 3-month avg
     </p>
   </div>
 </section>
 
-<div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-  <p className="text-xs uppercase tracking-wide text-slate-400">
+<div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+  <p className="text-xs uppercase tracking-wide text-zinc-500">
     Same month last year
   </p>
   <p className="mt-2 text-2xl font-semibold">
     {sameMonthLastYearMonthly != null ? sameMonthLastYearMonthly : "—"}
   </p>
-  <p className="mt-1 text-sm text-slate-400">
+  <p className="mt-1 text-sm text-zinc-500">
     Daily:{" "}
-    <span className="font-medium text-slate-200">
+    <span className="font-medium text-zinc-800">
       {sameMonthLastYearDaily != null ? sameMonthLastYearDaily.toFixed(2) : "—"}
     </span>
   </p>
-  <p className="mt-1 text-xs text-slate-500">
+  <p className="mt-1 text-xs text-zinc-500">
     {targetYear}-{String(targetMonth).padStart(2, "0")}
   </p>
 </div>

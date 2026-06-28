@@ -332,11 +332,11 @@ export default function MasterStockClient({ products }: { products: ProductRecor
       />
 
       {/* Category selector */}
-      <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-lg font-semibold text-slate-200">Shop Category</h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <h2 className="text-lg font-semibold text-zinc-800">Shop Category</h2>
+            <p className="text-xs text-zinc-500 mt-1">
               Select a category to view and allocate stock to shops
             </p>
           </div>
@@ -345,8 +345,8 @@ export default function MasterStockClient({ products }: { products: ProductRecor
               onClick={() => setActiveCategory("opatra")}
               className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition ${
                 activeCategory === "opatra"
-                  ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
-                  : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
+                  ? "border-indigo-500/70 bg-indigo-500/10 text-indigo-800 shadow-sm shadow-indigo-500/10"
+                  : "border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400/50 hover:text-indigo-700"
               }`}
             >
               Opatra Shops
@@ -355,8 +355,8 @@ export default function MasterStockClient({ products }: { products: ProductRecor
               onClick={() => setActiveCategory("pyt")}
               className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition ${
                 activeCategory === "pyt"
-                  ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
-                  : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
+                  ? "border-indigo-500/70 bg-indigo-500/10 text-indigo-800 shadow-sm shadow-indigo-500/10"
+                  : "border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400/50 hover:text-indigo-700"
               }`}
             >
               PYT Shops
@@ -367,10 +367,10 @@ export default function MasterStockClient({ products }: { products: ProductRecor
         {/* Active shops info - Card layout */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-zinc-600 uppercase tracking-wide">
               {activeCategory === "opatra" ? "Opatra" : "PYT"} Shops
             </h3>
-            <span className="text-xs text-slate-500 bg-slate-800/60 px-2 py-1 rounded-full">
+            <span className="text-xs text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
               {activeShops.length} shop{activeShops.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -378,30 +378,30 @@ export default function MasterStockClient({ products }: { products: ProductRecor
             {activeShops.map((shop) => (
               <div
                 key={shop.id}
-                className="rounded-xl border border-slate-700/80 bg-gradient-to-br from-slate-950/90 to-slate-900/70 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.3)] hover:border-emerald-400/40 transition-all hover:shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
+                className="rounded-xl border border-zinc-300 bg-white p-4 shadow-sm hover:border-indigo-400/40 transition-all hover:shadow-md"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-100">{shop.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Placeholder shop</p>
+                    <p className="text-sm font-semibold text-zinc-900">{shop.name}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Placeholder shop</p>
                   </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-400/20">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-400/20">
                     <span className="text-lg">🏪</span>
                   </div>
                 </div>
-                <div className="pt-3 border-t border-slate-800/60">
+                <div className="pt-3 border-t border-zinc-200">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-emerald-300 tabular-nums">
+                    <span className="text-2xl font-bold text-indigo-600 tabular-nums">
                       {shop.dailyDemand}
                     </span>
-                    <span className="text-xs text-slate-400">units/day</span>
+                    <span className="text-xs text-zinc-500">units/day</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-800/60">
-            <p className="text-xs text-slate-500 flex items-center gap-2">
+          <div className="mt-4 pt-4 border-t border-zinc-200">
+            <p className="text-xs text-zinc-500 flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400/60"></span>
               Showing only {activeCategory === "opatra" ? "Opatra" : "PYT"} products. These are placeholder shops. Replace with real shop data when available.
             </p>
@@ -410,12 +410,12 @@ export default function MasterStockClient({ products }: { products: ProductRecor
       </section>
 
       {/* Products table */}
-      <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-b border-slate-800/60">
+      <section className="rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-b border-zinc-200">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-slate-200">Product Allocations</h2>
+            <h2 className="text-lg font-semibold text-zinc-800">Product Allocations</h2>
             {selectedProducts.size > 0 && (
-              <span className="text-xs text-slate-400 bg-slate-800/60 px-2 py-1 rounded-full">
+              <span className="text-xs text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
                 {selectedProducts.size} selected
               </span>
             )}
@@ -425,7 +425,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
               <>
                 <button
                   onClick={clearSelection}
-                  className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-900/80 transition-colors"
+                  className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100 transition-colors"
                 >
                   Clear Selection
                 </button>
@@ -441,7 +441,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                       );
                       bulkAllocate(shop.id, avg);
                     }}
-                    className="rounded-xl border border-emerald-700/80 bg-emerald-950/60 px-3 py-2 text-xs font-medium text-emerald-200 hover:bg-emerald-900/80 transition-colors"
+                    className="rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
                     title={`Allocate to ${shop.name}`}
                   >
                     {shop.name.slice(0, 8)}
@@ -451,13 +451,13 @@ export default function MasterStockClient({ products }: { products: ProductRecor
             )}
             <button
               onClick={selectAll}
-              className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-900/80 transition-colors"
+              className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-800 hover:bg-zinc-100 transition-colors"
             >
               Select All
             </button>
             <button
               onClick={exportToCSV}
-              className="rounded-xl border border-slate-700/80 bg-slate-950/60 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-900/80 hover:border-emerald-400/40 transition-colors"
+              className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 hover:border-indigo-400/40 transition-colors"
             >
               📥 Export CSV
             </button>
@@ -465,14 +465,14 @@ export default function MasterStockClient({ products }: { products: ProductRecor
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-950/90 text-xs uppercase text-slate-400 sticky top-0 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+            <thead className="bg-white text-xs uppercase text-zinc-500 sticky top-0 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
               <tr>
                 <th className="px-4 py-3 text-left w-12">
                   <input
                     type="checkbox"
                     checked={selectedProducts.size === individuals.length && individuals.length > 0}
                     onChange={(e) => (e.target.checked ? selectAll() : clearSelection())}
-                    className="rounded border-slate-700 bg-slate-950"
+                    className="rounded border-zinc-300 bg-white"
                   />
                 </th>
                 <th className="px-4 py-3 text-left">Product</th>
@@ -481,7 +481,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                   <th key={shop.id} className="px-3 py-3 text-right min-w-[120px]">
                     <div className="flex flex-col">
                       <span>{shop.name}</span>
-                      <span className="text-[10px] text-slate-500 font-normal">
+                      <span className="text-[10px] text-zinc-500 font-normal">
                         ({shop.dailyDemand}/day)
                       </span>
                     </div>
@@ -512,14 +512,14 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                   return (
                     <tr
                       key={product.id}
-                      className={`border-t border-slate-800/70 transition-colors ${
+                      className={`border-t border-zinc-200 transition-colors ${
                         isSelected
-                          ? "bg-emerald-500/10 hover:bg-emerald-500/15"
+                          ? "bg-emerald-50 hover:bg-indigo-50"
                           : isCritical
                           ? "bg-red-500/5 hover:bg-red-500/10"
                           : isLowStock
                           ? "bg-amber-500/5 hover:bg-amber-500/10"
-                          : "hover:bg-slate-900/50"
+                          : "hover:bg-zinc-50"
                       }`}
                     >
                       <td className="px-4 py-4">
@@ -527,15 +527,15 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleProductSelection(product.id)}
-                          className="rounded border-slate-700 bg-slate-950"
+                          className="rounded border-zinc-300 bg-white"
                         />
                       </td>
                       <td className="px-4 py-4">
                         <Link
                           href={`/product/${product.id}`}
-                          className="group flex items-center gap-2 text-slate-100 hover:text-emerald-300 font-medium transition-colors"
+                          className="group flex items-center gap-2 text-zinc-900 hover:text-indigo-600 font-medium transition-colors"
                         >
-                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 text-xs font-semibold text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-300 transition-colors">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-xs font-semibold text-zinc-600 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
                             {(product.brand ?? "•").slice(0, 1)}
                           </span>
                           <span className="hover:underline">{product.name}</span>
@@ -543,10 +543,10 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-col items-end">
-                          <span className="text-right tabular-nums text-slate-100 font-semibold text-lg">
+                          <span className="text-right tabular-nums text-zinc-900 font-semibold text-lg">
                             {allocation.masterStock}
                           </span>
-                          <span className="text-[10px] text-slate-500">master stock</span>
+                          <span className="text-[10px] text-zinc-500">master stock</span>
                         </div>
                       </td>
                       {activeShops.map((shop) => {
@@ -573,14 +573,14 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                                       Number(e.target.value) || 0
                                     )
                                   }
-                                  className={`w-24 rounded-lg border px-3 py-2 text-sm text-slate-100 text-right tabular-nums font-medium transition-all focus:outline-none focus:ring-2 ${
+                                  className={`w-24 rounded-lg border px-3 py-2 text-sm text-zinc-900 text-right tabular-nums font-medium transition-all focus:outline-none focus:ring-2 ${
                                     allocated > 0
-                                      ? "border-emerald-400/40 bg-emerald-500/10 focus:border-emerald-400 focus:ring-emerald-500/30"
-                                      : "border-slate-700 bg-slate-950/70 focus:border-slate-600 focus:ring-slate-600/30"
+                                      ? "border-indigo-400/40 bg-emerald-50 focus:border-indigo-500 focus:ring-indigo-500/20"
+                                      : "border-zinc-300 bg-white focus:border-zinc-300 focus:ring-zinc-300/50"
                                   }`}
                                 />
                                 {allocated > 0 && (
-                                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 border-2 border-slate-950"></span>
+                                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white"></span>
                                 )}
                               </div>
                               {shopRunway.daysUntilRunOut != null && (
@@ -589,7 +589,7 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                                     className={`text-xs font-medium tabular-nums px-2 py-0.5 rounded-full ${
                                       shopIsLow
                                         ? "bg-red-500/15 text-red-300 border border-red-500/30"
-                                        : "bg-slate-800/60 text-slate-300 border border-slate-700/60"
+                                        : "bg-zinc-100 text-zinc-600 border border-zinc-300"
                                     }`}
                                   >
                                     {Math.round(shopRunway.daysUntilRunOut)}d
@@ -602,22 +602,22 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                       })}
                       <td className="px-4 py-4">
                         <div className="flex flex-col items-end">
-                          <span className="text-right tabular-nums text-slate-200 font-semibold">
+                          <span className="text-right tabular-nums text-zinc-800 font-semibold">
                             {totalAllocated}
                           </span>
-                          <span className="text-[10px] text-slate-500">allocated</span>
+                          <span className="text-[10px] text-zinc-500">allocated</span>
                         </div>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-col items-end">
                           <span
                             className={`text-right tabular-nums font-semibold ${
-                              isLowStock ? "text-amber-300" : "text-slate-200"
+                              isLowStock ? "text-amber-300" : "text-zinc-800"
                             }`}
                           >
                             {remaining}
                           </span>
-                          <span className="text-[10px] text-slate-500">remaining</span>
+                          <span className="text-[10px] text-zinc-500">remaining</span>
                         </div>
                       </td>
                       <td className="px-4 py-4">
@@ -629,17 +629,17 @@ export default function MasterStockClient({ products }: { products: ProductRecor
                                   ? "bg-red-500/15 text-red-300 border border-red-500/30"
                                   : masterRunway.daysUntilRunOut <= 30
                                   ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
-                                  : "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                                  : "bg-indigo-50 text-indigo-700 border border-indigo-500/30"
                               }`}
                             >
                               {Math.round(masterRunway.daysUntilRunOut)}d
                             </span>
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-[10px] text-zinc-500">
                               {fmtGB(masterRunway.runOutDate)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-zinc-500">—</span>
                         )}
                       </td>
                     </tr>

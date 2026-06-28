@@ -51,15 +51,15 @@ export default function AirtableBriefingTools({
 
   return (
     <div
-      className={`rounded-2xl border border-slate-600/50 bg-slate-900/50 ${pad} space-y-3`}
+      className={`rounded-2xl border border-zinc-200 bg-white ${pad} space-y-3`}
     >
       <div className="space-y-0.5">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
           Briefing baseline
         </h3>
-        <p className="text-[11px] text-slate-500 max-w-xl">
+        <p className="text-[11px] text-zinc-500 max-w-xl">
           Saves today&apos;s headline reorder counts to Airtable for comparison on the briefing page (All shops).
-          You must be <span className="text-slate-400">signed in</span>.
+          You must be <span className="text-zinc-500">signed in</span>.
         </p>
       </div>
 
@@ -67,13 +67,13 @@ export default function AirtableBriefingTools({
         type="button"
         disabled={busy}
         onClick={saveBaseline}
-        className="rounded-xl bg-emerald-600/90 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+        className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
       >
         {busy ? "Saving…" : "Save briefing snapshot"}
       </button>
 
       {message ? (
-        <p className="text-xs text-slate-300 whitespace-pre-wrap break-words">{message}</p>
+        <p className="text-xs text-zinc-600 whitespace-pre-wrap break-words">{message}</p>
       ) : null}
     </div>
   );

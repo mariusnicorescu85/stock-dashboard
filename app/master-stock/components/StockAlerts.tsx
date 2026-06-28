@@ -76,12 +76,12 @@ export default function StockAlerts({ products, allocations, activeShops }: Prop
 
   if (!hasAlerts) {
     return (
-      <section className="rounded-2xl border border-emerald-800/40 bg-emerald-500/10 p-6">
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
         <div className="flex items-center gap-3">
           <span className="text-2xl">✅</span>
           <div>
-            <h2 className="text-lg font-semibold text-emerald-200">All Clear</h2>
-            <p className="text-sm text-emerald-300/80">No stock alerts at this time.</p>
+            <h2 className="text-lg font-semibold text-emerald-700">All Clear</h2>
+            <p className="text-sm text-indigo-600">No stock alerts at this time.</p>
           </div>
         </div>
       </section>
@@ -89,8 +89,8 @@ export default function StockAlerts({ products, allocations, activeShops }: Prop
   }
 
   return (
-    <section className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-      <h2 className="text-lg font-semibold text-slate-200 mb-4">Stock Alerts</h2>
+    <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-zinc-800 mb-4">Stock Alerts</h2>
 
       {/* Master stock alerts */}
       {masterStockAlerts.length > 0 && (
@@ -105,9 +105,9 @@ export default function StockAlerts({ products, allocations, activeShops }: Prop
                 href={`/product/${product.id}`}
                 className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 hover:bg-amber-500/20 transition-colors"
               >
-                <span className="text-sm text-amber-100 font-medium">{product.name}</span>
+                <span className="text-sm text-amber-800 font-medium">{product.name}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-amber-200 tabular-nums">{remaining} left</span>
+                  <span className="text-xs text-amber-700 tabular-nums">{remaining} left</span>
                   <span className="text-xs text-amber-300/80">{Math.round(pct)}%</span>
                 </div>
               </Link>
@@ -130,10 +130,10 @@ export default function StockAlerts({ products, allocations, activeShops }: Prop
                 className="flex items-center justify-between rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 hover:bg-red-500/20 transition-colors"
               >
                 <div>
-                  <span className="text-sm text-red-100 font-medium">{product.name}</span>
-                  <span className="text-xs text-red-200/80 ml-2">→ {shop.name}</span>
+                  <span className="text-sm text-red-800 font-medium">{product.name}</span>
+                  <span className="text-xs text-red-700/80 ml-2">→ {shop.name}</span>
                 </div>
-                <span className="text-xs text-red-200 tabular-nums font-semibold">
+                <span className="text-xs text-red-700 tabular-nums font-semibold">
                   {Math.round(days)}d left
                 </span>
               </Link>

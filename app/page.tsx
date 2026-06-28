@@ -38,13 +38,13 @@ function daysFromToday(dateStr: string | null): number | null {
 }
 
 function daysBadge(days: number | null) {
-  if (days == null) return <span className="text-slate-400">—</span>;
+  if (days == null) return <span className="text-zinc-500">—</span>;
 
   const clamped = Math.max(0, Math.round(days));
-  let color = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-  if (clamped <= 7) color = "bg-red-500/15 text-red-300 border-red-500/30";
+  let color = "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (clamped <= 7) color = "bg-red-50 text-red-700 border-red-200";
   else if (clamped <= 30)
-    color = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    color = "bg-amber-50 text-amber-700 border-amber-200";
 
   return (
     <span
@@ -58,10 +58,10 @@ function daysBadge(days: number | null) {
 
 function orderByClass(orderByDate: string | null) {
   const diff = daysFromToday(orderByDate);
-  if (diff == null) return "text-slate-200";
+  if (diff == null) return "text-zinc-800";
   if (diff < 0) return "text-red-300";
-  if (diff <= 7) return "text-amber-200";
-  return "text-slate-200";
+  if (diff <= 7) return "text-amber-700";
+  return "text-zinc-800";
 }
 
 function runwayBar(p: ProductRecord) {
@@ -70,13 +70,13 @@ function runwayBar(p: ProductRecord) {
 
   const pct = Math.min(100, Math.max(0, (days / 30) * 100));
 
-  let barClass = "bg-emerald-400/80";
+  let barClass = "bg-emerald-500";
   if (days <= 7) barClass = "bg-red-400/80";
   else if (days <= 30) barClass = "bg-amber-300/80";
 
   return (
     <div
-      className="mt-1 h-1.5 w-full rounded-full bg-slate-800"
+      className="mt-1 h-1.5 w-full rounded-full bg-zinc-200"
       title="Visual runway"
     >
       <div className={`${barClass} h-full rounded-full`} style={{ width: `${pct}%` }} />
@@ -86,7 +86,7 @@ function runwayBar(p: ProductRecord) {
 
 function supplierDisplay(p: ProductRecord) {
   const name = p.supplier1 || p.supplier2;
-  if (!name && p.leadTimeDays == null) return <span className="text-slate-500">—</span>;
+  if (!name && p.leadTimeDays == null) return <span className="text-zinc-500">—</span>;
 
   const lead = p.leadTimeDays ?? null;
   const days = p.daysUntilRunOut ?? null;
@@ -103,14 +103,14 @@ function supplierDisplay(p: ProductRecord) {
   }
 
   return (
-    <span className="flex items-center gap-1.5 text-slate-100" title={title}>
+    <span className="flex items-center gap-1.5 text-zinc-900" title={title}>
       <span>{icon}</span>
       {name}
       {lead != null ? (
-        <span className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/70 px-2 py-0.5 text-[11px] text-slate-300">
+        <span className="inline-flex items-center gap-1 rounded-full border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600">
           <span
             className={`h-1.5 w-1.5 rounded-full ${
-              lead != null && days != null && lead > days ? "bg-amber-400" : "bg-emerald-400"
+              lead != null && days != null && lead > days ? "bg-amber-400" : "bg-emerald-500"
             }`}
           />
           {lead}d
@@ -155,10 +155,10 @@ function datePill(value: string | null, tone: "default" | "warn" | "danger" = "d
   const label = formatDate(value);
   const palette =
     tone === "danger"
-      ? "bg-red-500/10 text-red-200 border-red-400/30"
+      ? "bg-red-50 text-red-700 border-red-200"
       : tone === "warn"
-        ? "bg-amber-500/10 text-amber-200 border-amber-400/30"
-        : "bg-slate-800/80 text-slate-100 border-slate-700/80";
+        ? "bg-amber-50 text-amber-700 border-amber-200"
+        : "bg-zinc-100 text-zinc-800 border-zinc-300";
 
   return (
     <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs ${palette}`}>
@@ -240,39 +240,39 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const others = sorted.filter((p) => !opatra.includes(p) && !pyt.includes(p));
 
   return (
-    <main className="min-h-screen text-slate-100">
+    <main className="min-h-screen text-zinc-900">
       <div className="mx-auto max-w-[90rem] px-4 py-10 space-y-8">
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <div className="space-y-2 min-w-0">
-            <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/80">Ops Control</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-indigo-600">Ops Control</p>
             <h1 className="text-3xl font-semibold leading-tight">Stock Runway &amp; Reorder Dashboard</h1>
-            <p className="text-sm text-slate-400 max-w-2xl">
+            <p className="text-sm text-zinc-500 max-w-2xl">
               Live Airtable-backed view to keep runway safe and reorders timely.
             </p>
           </div>
           <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:justify-end sm:pt-1">
             <Link
               href="/monitor"
-              className="h-10 inline-flex items-center rounded-xl border border-teal-500/45 bg-teal-500/10 px-4 text-sm font-medium text-teal-200 hover:bg-teal-500/18"
+              className="h-10 inline-flex items-center rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-500/15"
             >
               Action monitor
             </Link>
             <Link
               href="/briefing"
-              className="h-10 inline-flex items-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 text-sm font-medium text-emerald-200 hover:bg-emerald-500/15"
+              className="h-10 inline-flex items-center rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-500/15"
             >
               Stock briefing
             </Link>
             <Link
               href="/buying-list"
-              className="h-10 inline-flex items-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 text-sm font-medium text-emerald-200 hover:bg-emerald-500/15"
+              className="h-10 inline-flex items-center rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-500/15"
             >
               Buying list
             </Link>
             <Link
               href="/ops/orders"
-              className="h-10 inline-flex items-center rounded-xl border border-slate-600 bg-slate-900/60 px-4 text-sm font-medium text-slate-200 hover:bg-slate-800/80"
+              className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-zinc-50 px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
             >
               Order progress
             </Link>
@@ -280,10 +280,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
         </header>
 
         {/* Detailed 60-day breakdown */}
-        <section className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] space-y-4">
+        <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm space-y-4">
           <div>
             <h2 className="text-lg font-semibold">Items running out in next 60 days</h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-zinc-500 mt-1">
               By time bucket, grouped under each shop (Airtable Shop). Click any item for full
               details.
             </p>
@@ -325,19 +325,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
            runningOut8to14.length === 0 && 
            runningOut15to30.length === 0 && 
            runningOut31to60.length === 0 && (
-            <div className="text-center py-6 text-slate-400 text-sm">
+            <div className="text-center py-6 text-zinc-500 text-sm">
               No items running out in the next 60 days.
             </div>
           )}
         </section>
 
         {/* Controls */}
-        <section className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] space-y-3">
+        <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm space-y-3">
           <AirtableBriefingTools />
 
           {/* View switch */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-400">View:</span>
+            <span className="text-zinc-500">View:</span>
             {[
               { key: "reorder", label: "Reorder" },
               { key: "all", label: "All individuals" },
@@ -359,9 +359,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
           name="q"
           defaultValue={query}
           placeholder="Search products"
-          className="h-10 w-64 rounded-xl border border-slate-700 bg-slate-950/70 px-3 pl-9 text-sm text-slate-100 shadow-inner shadow-black/30 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+          className="h-10 w-64 rounded-xl border border-zinc-300 bg-white px-3 pl-9 text-sm text-zinc-900  focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
         />
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
           🔍
         </span>
       </div>
@@ -369,14 +369,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       <input type="hidden" name="view" value={view} />
       <input type="hidden" name="sort" value={sortBy} />
 
-      <button className="h-10 rounded-xl bg-slate-100 px-3 text-sm font-semibold text-slate-900 hover:bg-white">
+      <button className="h-10 rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white hover:bg-indigo-500">
         Search
       </button>
 
       {query && (
         <Link
           href={`/?view=${view}&sort=${sortBy}`}
-          className="h-10 inline-flex items-center rounded-xl border border-slate-700 px-3 text-sm text-slate-300 hover:bg-slate-900/60"
+          className="h-10 inline-flex items-center rounded-xl border border-zinc-300 px-3 text-sm text-zinc-600 hover:bg-zinc-50"
         >
           Clear
         </Link>
@@ -387,31 +387,31 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
     <div className="flex flex-wrap items-center gap-2">
       <Link
         href="/compare"
-        className="h-10 inline-flex items-center rounded-xl border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200 hover:bg-slate-900/60"
+        className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800 hover:bg-zinc-50"
       >
         Compare products
       </Link>
       <Link
         href="/compare-one"
-        className="h-10 inline-flex items-center rounded-xl border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200 hover:bg-slate-900/60"
+        className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800 hover:bg-zinc-50"
       >
         Compare one product
       </Link>
       <Link
         href="/categories"
-        className="h-10 inline-flex items-center rounded-xl border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200 hover:bg-slate-900/60"
+        className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800 hover:bg-zinc-50"
       >
         Category demand
       </Link>
       <Link
         href="/master-stock"
-        className="h-10 inline-flex items-center rounded-xl border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200 hover:bg-slate-900/60"
+        className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800 hover:bg-zinc-50"
       >
         Master Stock
       </Link>
       <Link
         href="/diagnostics"
-        className="h-10 inline-flex items-center rounded-xl border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200 hover:bg-slate-900/60"
+        className="h-10 inline-flex items-center rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800 hover:bg-zinc-50"
       >
         System health
       </Link>
@@ -419,7 +419,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   </div>
 
   {/* Bottom row: sort */}
-  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+  <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
     <span>Sort:</span>
     {[
       { key: "orderBy", label: "Order by" },
@@ -478,35 +478,35 @@ function RunoutBucketByShop({
   > = {
     critical: {
       wrap: "border-red-400/40 bg-red-500/10",
-      h3: "text-red-200",
-      shop: "text-red-200/70",
+      h3: "text-red-700",
+      shop: "text-red-600/80",
       link: "border-red-400/30 bg-red-500/10 hover:bg-red-500/20",
-      name: "text-red-100",
-      days: "text-red-200",
+      name: "text-red-800",
+      days: "text-red-700",
     },
     urgent: {
       wrap: "border-amber-400/40 bg-amber-500/10",
-      h3: "text-amber-200",
-      shop: "text-amber-200/70",
+      h3: "text-amber-700",
+      shop: "text-amber-600/80",
       link: "border-amber-400/30 bg-amber-500/10 hover:bg-amber-500/20",
-      name: "text-amber-100",
-      days: "text-amber-200",
+      name: "text-amber-800",
+      days: "text-amber-700",
     },
     watch: {
       wrap: "border-blue-400/40 bg-blue-500/10",
-      h3: "text-blue-200",
-      shop: "text-blue-200/70",
+      h3: "text-blue-700",
+      shop: "text-blue-600/80",
       link: "border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20",
-      name: "text-blue-100",
-      days: "text-blue-200",
+      name: "text-blue-800",
+      days: "text-blue-700",
     },
     planning: {
-      wrap: "border-slate-600/40 bg-slate-700/10",
-      h3: "text-slate-300",
-      shop: "text-slate-400",
-      link: "border-slate-600/30 bg-slate-700/10 hover:bg-slate-700/20",
-      name: "text-slate-200",
-      days: "text-slate-300",
+      wrap: "border-zinc-300/60 bg-zinc-100",
+      h3: "text-zinc-600",
+      shop: "text-zinc-500",
+      link: "border-zinc-300/60 bg-zinc-100 hover:bg-zinc-100",
+      name: "text-zinc-800",
+      days: "text-zinc-600",
     },
   };
 
@@ -573,8 +573,8 @@ function ViewButton({
       href={`/?${params.toString()}`}
       className={`rounded-full border px-3 py-1.5 text-xs transition ${
         active
-          ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
-          : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
+          ? "border-indigo-500/70 bg-indigo-500/10 text-indigo-800 shadow-sm shadow-indigo-500/10"
+          : "border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400/50 hover:text-indigo-700"
       }`}
     >
       {opt.label}
@@ -605,8 +605,8 @@ function SortButton({
       href={`/?${params.toString()}`}
       className={`rounded-full border px-3 py-1.5 text-xs transition ${
         active
-          ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100 shadow-[0_8px_24px_rgba(52,211,153,0.25)]"
-          : "border-slate-700/80 bg-slate-900/70 text-slate-200 hover:border-emerald-300/40 hover:text-emerald-100"
+          ? "border-indigo-500/70 bg-indigo-500/10 text-indigo-800 shadow-sm shadow-indigo-500/10"
+          : "border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400/50 hover:text-indigo-700"
       }`}
     >
       {opt.label}
@@ -634,11 +634,11 @@ function Table({
   ];
 
   return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 shadow-[0_20px_70px_rgba(0,0,0,0.45)]">
+    <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
-        <thead className="sticky top-0 z-10 bg-slate-950/80 text-[11px] uppercase text-slate-400 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
-          <tr className="border-b border-slate-800/60">
+        <thead className="sticky top-0 z-10 bg-zinc-50 text-[11px] uppercase text-zinc-500 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+          <tr className="border-b border-zinc-200">
             <th className="px-4 py-3 text-left">Product</th>
             <th className="px-4 py-3 text-left hidden lg:table-cell">Brand</th>
             <th className="px-4 py-3 text-left hidden xl:table-cell">Supplier</th>
@@ -669,10 +669,10 @@ function Table({
             (section) =>
               section.rows.length > 0 && (
                 <React.Fragment key={section.label}>
-                  <tr className="bg-slate-950/80 border-t border-slate-800/70">
+                  <tr className="bg-zinc-100 border-t border-zinc-200">
                     <td
                       colSpan={14}
-                      className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-300"
+                      className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-600"
                     >
                       {section.label}
                     </td>
@@ -688,21 +688,21 @@ function Table({
                     return (
                       <tr
                         key={p.id}
-                        className="border-t border-slate-900/60 odd:bg-slate-900/40 even:bg-slate-900/20 hover:bg-slate-900/70 transition-colors"
+                        className="border-t border-zinc-100 odd:bg-zinc-50/80 even:bg-white hover:bg-indigo-50/60 transition-colors"
                       >
-                        <td className="px-4 py-3 text-slate-100 font-medium">
+                        <td className="px-4 py-3 text-zinc-900 font-medium">
                           <Link
                             href={`/product/${p.id}`}
                             className="flex items-center gap-2 hover:underline"
                           >
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800/80 text-xs font-semibold text-slate-200">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-800">
                               {p.brand?.slice(0, 1) ?? "•"}
                             </span>
                             {p.name}
                           </Link>
                         </td>
 
-                        <td className="px-4 py-3 text-slate-400 hidden lg:table-cell">
+                        <td className="px-4 py-3 text-zinc-500 hidden lg:table-cell">
                           {p.brand}
                         </td>
                         <td className="px-4 py-3 hidden xl:table-cell">
@@ -710,26 +710,26 @@ function Table({
                         </td>
 
                         {/* NEW totals cells */}
-                        <td className="px-2 py-3 text-right tabular-nums text-slate-100 hidden xl:table-cell">
+                        <td className="px-2 py-3 text-right tabular-nums text-zinc-900 hidden xl:table-cell">
                           {t.individual}
                         </td>
-                        <td className="px-2 py-3 text-right tabular-nums text-slate-100 hidden xl:table-cell">
+                        <td className="px-2 py-3 text-right tabular-nums text-zinc-900 hidden xl:table-cell">
                           {t.combo}
                         </td>
-                        <td className="px-3 py-3 text-right tabular-nums text-slate-100 font-semibold">
+                        <td className="px-3 py-3 text-right tabular-nums text-zinc-900 font-semibold">
                           {t.all}
                         </td>
 
-                        <td className="px-4 py-3 text-right tabular-nums text-slate-100">
+                        <td className="px-4 py-3 text-right tabular-nums text-zinc-900">
                           {p.currentStock}
                           {p.incomingStockTotal > 0 && (
-                            <span className="ml-1 text-xs text-emerald-400">
+                            <span className="ml-1 text-xs text-indigo-600">
                               +{p.incomingStockTotal}
                             </span>
                           )}
                         </td>
 
-                        <td className="px-4 py-3 text-right tabular-nums text-slate-100">
+                        <td className="px-4 py-3 text-right tabular-nums text-zinc-900">
                           {p.totalDemandThisMonth}
                         </td>
 
@@ -761,13 +761,13 @@ function Table({
                             : "—"}
                         </td>
 
-                        <td className="px-4 py-3 text-right text-emerald-200 font-bold tabular-nums min-w-[80px]">
+                        <td className="px-4 py-3 text-right text-emerald-700 font-bold tabular-nums min-w-[80px]">
                           {p.qtyToOrder}
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-slate-300 hidden 2xl:table-cell">
+                        <td className="px-4 py-3 text-right tabular-nums text-zinc-600 hidden 2xl:table-cell">
                           {formatMoneyForBrandOptional(p.brand, p.pricePerUnit)}
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-slate-200 hidden 2xl:table-cell font-medium">
+                        <td className="px-4 py-3 text-right tabular-nums text-zinc-800 hidden 2xl:table-cell font-medium">
                           {formatMoneyForBrandOptional(
                             p.brand,
                             p.pricePerUnit != null
@@ -785,7 +785,7 @@ function Table({
 
           {sorted.length === 0 && (
             <tr>
-              <td colSpan={14} className="px-4 py-6 text-center text-slate-400">
+              <td colSpan={14} className="px-4 py-6 text-center text-zinc-500">
                 Nothing found for this view.
               </td>
             </tr>
