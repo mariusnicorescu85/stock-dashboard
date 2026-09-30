@@ -38,6 +38,36 @@ function normComponentName(s: string): string {
   return s.trim().toLowerCase();
 }
 
+/** Names inside a combo sales row ("A + B + C"). Empty when the row is a single product. */
+export function comboComponentNames(recordName: string): string[] {
+  if (!recordName.includes("+")) return [];
+  const parts = recordName
+    .split("+")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return parts.length >= 2 ? parts : [];
+}
+
+/**
+ * Units from combo rows ("A + B") that should count toward this product.
+ * Each combo sale is added in full to every component, matching the Categories page.
+ */
+export function comboUnitsExtraForProductName(
+  unitsByProductName: Map<string, number>,
+  productName: string
+): number {
+  const target = normComponentName(productName);
+  if (!target) return 0;
+  let extra = 0;
+  for (const [name, units] of unitsByProductName) {
+    if (!Number.isFinite(units) || units <= 0) continue;
+    for (const part of comboComponentNames(name)) {
+      if (normComponentName(part) === target) extra += units;
+    }
+  }
+  return extra;
+}
+
 /**
  * For every monthly row whose name looks like "A + B + C", add that row's units (full amount)
  * to each component's running month total — same idea as bundle-driven usage on individuals.
@@ -48,11 +78,7 @@ export function comboDemandExtraMonthsByNormComponent(
   const acc = new Map<string, number[]>();
 
   for (const [key, months] of breakdown) {
-    if (!key.includes("+")) continue;
-    const parts = key
-      .split("+")
-      .map((s) => normComponentName(s))
-      .filter(Boolean);
+    const parts = comboComponentNames(key).map((s) => normComponentName(s));
     if (parts.length < 2) continue;
 
     for (const p of parts) {

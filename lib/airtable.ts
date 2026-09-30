@@ -1,6 +1,7 @@
 // lib/airtable.ts
 
 import { dateToYmd } from "./calendar";
+import { comboUnitsExtraForProductName } from "./categoryDemandDisplay";
 import {
   inferPurchaseCurrencyFromBrand,
   parseMoneyish,
@@ -480,9 +481,12 @@ export async function fetchProducts(): Promise<ProductRecord[]> {
   const daysInThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
   for (const p of products) {
-    const units = demandUnitsForProductName(demandMap, p.name);
-    if (units === undefined) continue;
+    const own = demandUnitsForProductName(demandMap, p.name);
+    const comboExtra = comboUnitsExtraForProductName(demandMap, p.name);
+    if (own === undefined && comboExtra <= 0) continue;
 
+    // Standalone sales plus every combo that lists this product ("Butter + …").
+    const units = (own ?? 0) + comboExtra;
     p.totalDemandThisMonth = units;
     p.dailyDemand =
       units > 0 && daysInThisMonth > 0 ? units / daysInThisMonth : 0;
