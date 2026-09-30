@@ -68,6 +68,14 @@ export type ProductRecord = {
    * Field names: "Briefing ordered at", "Briefing Ordered At", "Reorder placed at".
    */
   briefingOrderedAt: string | null;
+
+  /**
+   * True when this row is a PYT colour range (Ceramic, Lola Set, and similar),
+   * not a single Airtable product. `id` is not an Airtable record id.
+   */
+  isColourPool?: boolean;
+  /** Stable key such as `pyt:ceramic` when {@link isColourPool} is set. */
+  colourPoolKey?: string;
 };
 
 /**

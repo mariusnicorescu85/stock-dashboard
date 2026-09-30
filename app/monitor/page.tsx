@@ -77,7 +77,7 @@ export default async function MonitorPage({
           </div>
         </header>
 
-        <MonitorPanel briefing={briefing} shop={shop} products={scoped} />
+        <MonitorPanel briefing={briefing} shop={shop} products={buckets.stockRows} />
       </div>
     </main>
   );

@@ -1,4 +1,5 @@
 import type { ProductRecord } from "./airtable";
+import { applyColourPools } from "./colourPools";
 import { dateToYmd } from "./calendar";
 import {
   formatMoney,
@@ -85,26 +86,28 @@ function mapToReorderLines(sorted: ProductRecord[]): BriefingTopReorder[] {
 export function partitionRunoutBuckets(products: ProductRecord[]) {
   const individuals = individualsOnly(products);
   const active = individuals.filter((p) => !p.excludeFromReorder);
+  // Colour ranges (Ceramic, Infrared, Lola Set, …) share one runway and one reorder line.
+  const stockRows = applyColourPools(active);
 
-  const runningOut0to7 = active.filter(
+  const runningOut0to7 = stockRows.filter(
     (p) => p.daysUntilRunOut != null && p.daysUntilRunOut >= 0 && p.daysUntilRunOut <= 7
   );
-  const runningOut8to14 = active.filter(
+  const runningOut8to14 = stockRows.filter(
     (p) => p.daysUntilRunOut != null && p.daysUntilRunOut > 7 && p.daysUntilRunOut <= 14
   );
-  const runningOut15to30 = active.filter(
+  const runningOut15to30 = stockRows.filter(
     (p) => p.daysUntilRunOut != null && p.daysUntilRunOut > 14 && p.daysUntilRunOut <= 30
   );
-  const runningOut31to60 = active.filter(
+  const runningOut31to60 = stockRows.filter(
     (p) => p.daysUntilRunOut != null && p.daysUntilRunOut > 30 && p.daysUntilRunOut <= 60
   );
 
-  const needingOrder = individuals.filter(
-    (p) => p.qtyToOrder > 0 && !p.excludeFromReorder
-  );
+  const needingOrder = stockRows.filter((p) => p.qtyToOrder > 0);
 
   return {
     individuals,
+    /** Active individuals after colour ranges are collapsed. Use for lookups of reorder rows. */
+    stockRows,
     runningOut0to7,
     runningOut8to14,
     runningOut15to30,

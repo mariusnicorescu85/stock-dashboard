@@ -41,6 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 csv/*
+*-Grid view.csv
 
 Stock Daily Briefing.json
 

@@ -334,6 +334,8 @@ export async function syncOrderWorkflowsFromProducts(options?: {
     const groups = new Map<string, ProductRecord[]>();
     for (const p of needingOrder) {
       if (p.qtyToOrder <= 0) continue;
+      // Colour-range rows are not Airtable products; a supplier order still names a colour.
+      if (p.isColourPool) continue;
       const key = dedupeKeyForReorderGroup(p);
       const list = groups.get(key);
       if (list) list.push(p);

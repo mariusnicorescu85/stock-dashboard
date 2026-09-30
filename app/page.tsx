@@ -284,8 +284,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
           <div>
             <h2 className="text-lg font-semibold">Items running out in next 60 days</h2>
             <p className="text-xs text-zinc-500 mt-1">
-              By time bucket, grouped under each shop (Airtable Shop). Click any item for full
-              details.
+              By time bucket, grouped under each shop. Ceramic, Infrared, Titanium, 19mm, 25mm, and
+              Lola Set share one runway across colours, shown as the colours you have on hand.
             </p>
           </div>
 
@@ -528,18 +528,33 @@ function RunoutBucketByShop({
               {shop}
             </p>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {shopItems.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/product/${p.id}`}
-                  className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${t.link}`}
-                >
-                  <span className={`font-medium truncate min-w-0 flex-1 ${t.name}`}>{p.name}</span>
-                  <span className={`tabular-nums whitespace-nowrap shrink-0 ${t.days}`}>
-                    {Math.max(0, Math.round(p.daysUntilRunOut ?? 0))}d
-                  </span>
-                </Link>
-              ))}
+              {shopItems.map((p) => {
+                const body = (
+                  <>
+                    <span
+                      className={`font-medium min-w-0 flex-1 ${p.isColourPool ? "" : "truncate"} ${t.name}`}
+                    >
+                      {p.name}
+                    </span>
+                    <span className={`tabular-nums whitespace-nowrap shrink-0 ${t.days}`}>
+                      {Math.max(0, Math.round(p.daysUntilRunOut ?? 0))}d
+                    </span>
+                  </>
+                );
+                const className = `flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${t.link}`;
+                if (p.isColourPool) {
+                  return (
+                    <div key={p.id} className={className}>
+                      {body}
+                    </div>
+                  );
+                }
+                return (
+                  <Link key={p.id} href={`/product/${p.id}`} className={className}>
+                    {body}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -691,15 +706,24 @@ function Table({
                         className="border-t border-zinc-100 odd:bg-zinc-50/80 even:bg-white hover:bg-indigo-50/60 transition-colors"
                       >
                         <td className="px-4 py-3 text-zinc-900 font-medium">
-                          <Link
-                            href={`/product/${p.id}`}
-                            className="flex items-center gap-2 hover:underline"
-                          >
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-800">
-                              {p.brand?.slice(0, 1) ?? "•"}
+                          {p.isColourPool ? (
+                            <span className="flex items-center gap-2">
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-800">
+                                {p.brand?.slice(0, 1) ?? "•"}
+                              </span>
+                              {p.name}
                             </span>
-                            {p.name}
-                          </Link>
+                          ) : (
+                            <Link
+                              href={`/product/${p.id}`}
+                              className="flex items-center gap-2 hover:underline"
+                            >
+                              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-800">
+                                {p.brand?.slice(0, 1) ?? "•"}
+                              </span>
+                              {p.name}
+                            </Link>
+                          )}
                         </td>
 
                         <td className="px-4 py-3 text-zinc-500 hidden lg:table-cell">

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { addCalendarDaysYmd } from "@/lib/addCalendarDaysYmd";
 import { reorderRowIsBriefingSnoozed } from "@/lib/briefingProductSignals";
 import type { ProductRecord } from "@/lib/airtable";
+import { isColourPoolProductId } from "@/lib/colourPools";
 import { daysCoverageWithMinOrderChunk, minimumOrderableChunkUnits } from "@/lib/minOrderCoverage";
 import { formatMoneyOptional } from "@/lib/money";
 import { monitorPressureLabel } from "@/lib/monitorPressureTier";
@@ -149,12 +150,14 @@ function MonitorQueueRow({
         <BriefingProductSignalButtons row={r} />
       </td>
       <td className="py-4 pr-4 text-right align-top lg:pr-0">
-        <Link
-          href={`/product/${encodeURIComponent(r.id)}`}
-          className="text-[12px] font-medium text-zinc-500 hover:text-indigo-600 transition-colors"
-        >
-          Detail
-        </Link>
+        {isColourPoolProductId(r.id) ? null : (
+          <Link
+            href={`/product/${encodeURIComponent(r.id)}`}
+            className="text-[12px] font-medium text-zinc-500 hover:text-indigo-600 transition-colors"
+          >
+            Detail
+          </Link>
+        )}
       </td>
     </tr>
   );

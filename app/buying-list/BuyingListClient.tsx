@@ -10,6 +10,7 @@ import {
   formatOrderByForCsv,
   type BuyingListRow,
 } from "@/lib/buyingListCsv";
+import { isColourPoolProductId } from "@/lib/colourPools";
 import {
   formatMoney,
   formatMoneyOptional,
@@ -439,9 +440,11 @@ export default function BuyingListClient({
                   />
                 </td>
                 <td className="px-4 py-3 text-right hidden md:table-cell">
-                  <Link href={`/product/${r.id}`} className="text-xs text-indigo-600 hover:underline">
-                    Details
-                  </Link>
+                  {isColourPoolProductId(r.id) ? null : (
+                    <Link href={`/product/${r.id}`} className="text-xs text-indigo-600 hover:underline">
+                      Details
+                    </Link>
+                  )}
                 </td>
               </tr>
             );
